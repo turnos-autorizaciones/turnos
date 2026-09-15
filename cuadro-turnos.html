@@ -160,20 +160,17 @@ td.horas small{display:block;font-size:var(--fs-xs);font-weight:400;color:var(--
   h2{page-break-after:avoid}
 }
 /* los recuadros para pegar los datos del proyecto ya no se usan */
-.entrada-config, .nube-caja{display:none!important}
+#entrada, .entrada-config, .nube-caja{display:none!important}
 </style>
 <script>
 /* ============================================================
-   DATOS DEL PROYECTO -- ya vienen fijos aqui.
-   Nadie tiene que pegarlos: solo correo y contrasena.
+   DATOS DEL PROYECTO Y CUENTA DE ENTRADA -- ya vienen fijos aqui.
+   La pagina entra sola: no hay pantalla de login.
    ============================================================ */
 var SB_URL_FIJO  = 'https://axmngpkcioxjsavolnvl.supabase.co';
 var SB_ANON_FIJO = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF4bW5ncGtjaW94anNhdm9sbnZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0MzY0NTQsImV4cCI6MjEwNTAxMjQ1NH0.7_u6oQzBbqo3eWR6olZTIW_oND6H0QgrMGL1O-8srIU';
-try{
-  var c = JSON.parse(localStorage.getItem('cuadroTurnos.supabase.v1') || '{}');
-  if (SB_URL_FIJO && SB_ANON_FIJO && !(c.acceso && c.vence > Date.now() + 30000))
-    document.documentElement.className = 'pre-bloqueado';
-}catch(e){}
+var SB_CUENTA = 'autorizacioneshospitalarias@hospitalsanjose.gov.co';
+var SB_CLAVE  = 'Aut.Autorizaciones20.26*';
 </script>
 </head>
 <body>
@@ -974,7 +971,13 @@ async function sbSalir(){
   recordarSb();
 }
 async function sbCabeceras(){
-  if (!sbConSesion()) await sbRefrescar();
+  if (!sbConSesion()){
+    try { await sbRefrescar(); }
+    catch(e){
+      if (!(SB_CUENTA && SB_CLAVE)) throw e;
+      await sbEntrar(SB_CUENTA, SB_CLAVE);
+    }
+  }
   return { 'apikey': sb.anon, 'Authorization': 'Bearer ' + sb.acceso, 'Content-Type': 'application/json' };
 }
 
@@ -1100,6 +1103,22 @@ async function salirSb(){
   mensajeSb('Saliste. El cuadro se sigue guardando en este navegador.');
 }
 
+/* ---- entrada automatica: la pagina entra sola, sin pantalla ---- */
+let sbEntrandoSola = false;
+async function entrarSola(){
+  if (!sbConfigurado() || sbEntrandoSola) return;
+  sbEntrandoSola = true;
+  try {
+    if (!sbConSesion()) await sbEntrar(SB_CUENTA, SB_CLAVE);
+    await traerDeNube(true);
+  } catch (e) {
+    pintarEstadoSb('mal', 'No pude conectar');
+    mensajeSb('No pude entrar sola: ' + e.message, true);
+  } finally {
+    sbEntrandoSola = false;
+  }
+}
+
 
 /* ---- pantalla de entrada ---- */
 function guardarDatosSb(u, k, donde){
@@ -1118,19 +1137,12 @@ function mensajeEntrada(t, malo){
   if (el){ el.textContent = t || ''; el.style.color = malo ? '#b3261e' : '#24684a'; }
 }
 function pintarEntrada(){
+  /* Ya no hay pantalla de entrada: la pagina entra sola con la cuenta fija. */
   const capa = document.getElementById('entrada');
-  if (!capa) return;
-  const dentro = sbConSesion() || !!sb.refresco;
-  const mostrar = sbConfigurado() && !dentro;
-  capa.hidden = !mostrar;
-  document.body.classList.toggle('bloqueado', mostrar);
+  if (capa) capa.hidden = true;
+  document.body.classList.remove('bloqueado');
   const salir = document.getElementById('btnSalirCab');
-  if (salir) salir.hidden = !dentro;
-  if (mostrar){
-    document.getElementById('eEmail').value = sb.email || '';
-    document.getElementById('ePass').value = '';
-    setTimeout(function(){ (sb.email ? document.getElementById('ePass') : document.getElementById('eEmail')).focus(); }, 100);
-  }
+  if (salir) salir.hidden = true;
 }
 async function entrarDesdePantalla(){
   const email = (document.getElementById('eEmail').value || '').trim();
@@ -1188,7 +1200,7 @@ cargar();
 cargarSb();
 render();
 pintarEntrada();
-if (sbConfigurado()) traerDeNube(true);
+if (sbConfigurado()) entrarSola();
 </script>
 </body>
 </html>
