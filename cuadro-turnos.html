@@ -235,7 +235,9 @@ var SB_CLAVE  = 'Aut.Autorizaciones20.26*';
 
 <h2><span class="punto" style="background:var(--g)"></span>Hospitalización<span class="cuenta" id="cuentaHosp"></span></h2>
 <p class="nota">
-  Turnos de 8 h. Entre semana todos hacen <strong>D</strong>; los fines de semana cubren <strong>FD</strong> de a dos personas, turnándose. YAMILETH (monitora) no hace fines de semana.
+   Turnos de 8 h. Entre semana todos hacen <strong>D</strong>; los fines de semana cubren <strong>FD</strong> de a dos personas, turnándose. YAMILETH (monitora) no hace fines de semana.
+   El reparto de los <strong>FD</strong> va solo y cumple tres reglas: quien cierra el último fin de semana del mes no abre el del mes siguiente,
+   nadie hace FD dos fines de semana seguidos, y el que llevó más FD en los meses anteriores va de último para emparejar (la cuenta arranca en septiembre).
 </p>
 <div class="scroll"><table id="tablaHosp"><thead></thead><tbody></tbody></table></div>
 
@@ -410,12 +412,65 @@ function generarAlmuerzos(a, m){
   return res;
 }
 
+/* ---- Reparto de los FD de hospitalización ----------------------------------
+   Reglas que pidió el hospital (valen todos los meses):
+     1. Quien hace el último FD de un mes no puede hacer el primer FD del mes siguiente.
+     2. Nadie hace FD dos fines de semana seguidos.
+     3. El que hizo más FD en septiembre (y en los meses anteriores) hace menos después:
+        en cada fin de semana entran los que llevan menos FD acumulados.
+   El punto de partida es septiembre de 2026, que ya está cuadrado.
+   ---------------------------------------------------------------------------- */
+const FD_REF = {a:2026, m:9};     /* desde aquí se empiezan a contar los FD */
+const FD_POR_FINDE = 2;           /* dos personas cubren cada fin de semana */
+
+const sabadosDe = (a, m) => {
+  const dias = diasDelMes(a, m), res = [];
+  for (let d = 1; d <= dias; d++) if (new Date(a, m-1, d).getDay() === 6) res.push(d);
+  return res;
+};
+/* quiénes hicieron FD el último fin de semana del mes (el sábado y el domingo) */
+function ultimoFindeDe(fila, a, m){
+  const dias = diasDelMes(a, m);
+  for (let d = dias; d >= 1; d--){
+    if (new Date(a, m-1, d).getDay() !== 6) continue;
+    const quienes = [];
+    for (const p of HOSP){
+      const f = fila[p.nombre] || [];
+      if (f[d-1] === 'FD' || f[d] === 'FD') quienes.push(p.nombre);
+    }
+    return quienes;
+  }
+  return [];
+}
+/* quiénes hicieron FD el último día del mes (el sábado, para pasar el domingo al mes siguiente) */
+function ultimoDiaFD(fila, a, m){
+  const dias = diasDelMes(a, m), f2 = fila || {};
+  return HOSP.filter(p => (f2[p.nombre] || [])[dias-1] === 'FD').map(p => p.nombre);
+}
+/* Cómo está la repartición al empezar el mes (a,m): cuántos FD lleva cada uno desde
+   septiembre y quiénes cerraron el mes anterior. Si un mes no está guardado, se
+   calcula con estas mismas reglas (así los meses quedan encadenados). */
+function contextoFD(a, m){
+  const conteo = {};
+  HOSP.forEach(p => conteo[p.nombre] = 0);
+  let cierre = [], cierreDia = [];
+  let ya = FD_REF.a, mm = FD_REF.m, pasos = 0;
+  while ((ya < a || (ya === a && mm < m)) && pasos < 120){
+    const k = claveMes(ya, mm);
+    const fila = (estado[k] && estado[k].hosp) || generarHospitalizacion(ya, mm);
+    for (const p of HOSP) conteo[p.nombre] += (fila[p.nombre] || []).filter(c => c === 'FD').length;
+    cierre    = ultimoFindeDe(fila, ya, mm);
+    cierreDia = ultimoDiaFD(fila, ya, mm);
+    pasos++;
+    mm++; if (mm > 12){ mm = 1; ya++; }
+  }
+  return {conteo: conteo, cierre: cierre, cierreDia: cierreDia};
+}
+
 function generarHospitalizacion(a,m){
   const dias = diasDelMes(a,m), res = {};
   HOSP.forEach(p => res[p.nombre] = new Array(dias).fill(''));
   const quien = HOSP.filter(p => p.nombre !== MONITORA);
-  const findes = [];
-  for (let d=1; d<=dias; d++) if (new Date(a,m-1,d).getDay()===6) findes.push(d);
 
   /* entre semana: todos hacen D */
   for (const p of HOSP)
@@ -424,14 +479,31 @@ function generarHospitalizacion(a,m){
       if (w!==0 && w!==6) res[p.nombre][d-1] = 'D';
     }
 
-  /* fines de semana: dos personas por fin de semana, rotando entre las cinco */
-  findes.forEach((sab, wi)=>{
-    const dos = [quien[(wi*2)%quien.length].nombre, quien[(wi*2+1)%quien.length].nombre];
+  const {conteo, cierre, cierreDia} = contextoFD(a, m);
+
+  /* si el día 1 cae domingo, ese día lo cubre quien hizo el sábado del mes anterior */
+  if (new Date(a, m-1, 1).getDay() === 0)
+    for (const n of cierreDia) res[n][0] = 'FD';
+
+  /* fines de semana: dos personas, las que llevan menos FD y que no hicieron el fin de semana anterior */
+  const orden = quien.map((p, i) => ({nombre: p.nombre, i: i}));
+  const menosFD = (lista, excluir) => lista
+    .filter(x => excluir.indexOf(x.nombre) < 0)
+    .sort((x, y) => (conteo[x.nombre] - conteo[y.nombre]) || (x.i - y.i));
+
+  let previos = cierre.slice();
+  for (const sab of sabadosDe(a, m)){
+    const dos = menosFD(orden, previos).slice(0, FD_POR_FINDE).map(x => x.nombre);
+    /* por si acaso no alcanzaran (no pasa con cinco personas) */
+    if (dos.length < FD_POR_FINDE)
+      for (const x of menosFD(orden, dos)) { if (dos.length >= FD_POR_FINDE) break; dos.push(x.nombre); }
     for (const nom of dos){
       res[nom][sab-1] = 'FD';
       if (sab < dias) res[nom][sab] = 'FD';
+      conteo[nom]++;
     }
-  });
+    previos = dos;
+  }
   return res;
 }
 
@@ -584,6 +656,27 @@ function pintarAvisos(){
     const n = HOSP.filter(p => p.nombre !== MONITORA)
                   .filter(p => { const f = hosp[p.nombre] || []; return f[d-1] === 'FD' || f[d] === 'FD'; }).length;
     if (n !== 2) lista.push('Hospitalización, fin de semana del ' + d + ': lo cubren ' + n + ' persona' + (n === 1 ? '' : 's') + ' (deberían ser 2)');
+  }
+
+  /* 4. hospitalización: nadie hace FD dos fines de semana seguidos */
+  const sabs = [];
+  for (let d = 1; d <= dias; d++) if (new Date(a, m-1, d).getDay() === 6) sabs.push(d);
+  const cubrenFinde = sab => HOSP.filter(p => {
+    const f = hosp[p.nombre] || []; return f[sab-1] === 'FD' || f[sab] === 'FD'; }).map(p => p.nombre);
+  for (let j = 1; j < sabs.length; j++){
+    const antes = cubrenFinde(sabs[j-1]);
+    for (const n of cubrenFinde(sabs[j]))
+      if (antes.indexOf(n) >= 0)
+        lista.push(cortoDe(n) + ': hace FD el fin de semana del ' + sabs[j-1] + ' y otra vez el del ' + sabs[j] +
+                   ' (no pueden ser dos seguidos)');
+  }
+  /* 4b. el primer fin de semana del mes no puede repetir a quien cerró el mes anterior */
+  const ctxFD = contextoFD(a, m);
+  if (ctxFD.cierre.length && sabs.length){
+    for (const n of cubrenFinde(sabs[0]))
+      if (ctxFD.cierre.indexOf(n) >= 0)
+        lista.push(cortoDe(n) + ': cerró el mes pasado y vuelve a hacer FD en el primer fin de semana de ' +
+                   MESES[m-1] + ' (no puede repetir)');
   }
 
   const caja = $('#avisos');
