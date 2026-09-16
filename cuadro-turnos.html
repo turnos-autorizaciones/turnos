@@ -195,7 +195,6 @@ var SB_CUENTA = 'autorizacioneshospitalarias@hospitalsanjose.gov.co';   /* solo 
     <input id="ePass" type="password" placeholder="tu contraseña" autocomplete="current-password">
     <button id="btnEntrar" class="nube-btn">Entrar</button>
     <p id="eMensaje" class="nube-msg"></p>
-    <p class="sub" style="margin-top:10px">La sesión queda recordada en este equipo; para cerrarla, usa el botón «Salir» del cuadro.</p>
     <details class="entrada-config">
       <summary>Primera vez: pegar los datos del proyecto</summary>
       <label for="eUrl">Dirección del proyecto</label>
@@ -1321,7 +1320,7 @@ async function entrarSb(){
 async function salirSb(){
   await sbSalir();
   pintarEstadoSb('local', 'Sesión cerrada');
-  pedirEntrada('Saliste. El cuadro queda oculto hasta que vuelvas a entrar.');
+  pedirEntrada();
 }
 
 
@@ -1352,7 +1351,7 @@ function pedirEntrada(mensaje){
   if (correo && !correo.value) correo.value = SB_CUENTA || '';
   const clave = document.getElementById('ePass');
   if (clave){ clave.value = ''; try { clave.focus(); } catch(e){} }
-  mensajeEntrada(mensaje || 'Entra con la cuenta de administrador.');
+  mensajeEntrada(mensaje || '');     /* sin mensaje: la pantalla queda limpia */
 }
 /* Ya entró: muestra el cuadro y oculta la pantalla de entrada. */
 function entrarAlCuadro(){
