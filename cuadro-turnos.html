@@ -555,28 +555,58 @@ function ultimoDiaFD(fila, a, m){
   if (new Date(a, m-1, dias).getDay() !== 6) return [];
   return HOSP.filter(p => (f2[p.nombre] || [])[dias-1] === 'FD').map(p => p.nombre);
 }
+/* El cuadro de hospitalización de un mes: el que está guardado o, si no, el que
+   sale de estas mismas reglas. */
+function filaHospDeMes(a, m){
+  const k = claveMes(a, m);
+  return (estado[k] && estado[k].hosp) || generarHospitalizacion(a, m);
+}
 /* Cómo está la repartición al empezar el mes (a,m): cuántos FD lleva cada uno desde
    septiembre y quiénes cerraron el mes anterior. Si un mes no está guardado, se
-   calcula con estas mismas reglas (así los meses quedan encadenados). */
-function contextoFD(a, m){
+   calcula con estas mismas reglas (así los meses quedan encadenados).
+   OJO: cada mes se guarda en 'cacheFD' en cuanto se calcula. Sin esa memoria, el
+   mes pedido volvía a calcular todos los meses anteriores y el cuadro se demoraba
+   el doble por cada mes que pasara (en 2028 ya se quedaba pegado). */
+let cacheFD = {};
+function mesAntes(a, m){ return (m === 1) ? {a: a - 1, m: 12} : {a: a, m: m - 1}; }
+/* se entrega una copia: el reparto de un mes suma sobre el contador que recibe,
+   y el que está guardado tiene que quedar intacto para el mes siguiente. */
+function copiaFD(x){
   const conteo = {};
-  HOSP.forEach(p => conteo[p.nombre] = 0);
+  for (const n in x.conteo) conteo[n] = x.conteo[n];
+  return {conteo: conteo, cierre: x.cierre.slice(), cierreDia: x.cierreDia.slice()};
+}
+function contextoFD(a, m){
+  const k = claveMes(a, m);
+  const cero = () => { const c = {}; HOSP.forEach(p => c[p.nombre] = 0); return c; };
+  /* antes de septiembre de 2026 no hay cuenta: el cuadro arranca ahí */
+  if (a < FD_REF.a || (a === FD_REF.a && m < FD_REF.m)){
+    const vacio = {conteo: cero(), cierre: [], cierreDia: []};
+    cacheFD[k] = vacio;
+    return copiaFD(vacio);
+  }
+  if (cacheFD[k]) return copiaFD(cacheFD[k]);
+  const conteo = cero();
   let cierre = [], cierreDia = [];
-  let ya = FD_REF.a, mm = FD_REF.m, pasos = 0;
-  while ((ya < a || (ya === a && mm < m)) && pasos < 120){
-    const k = claveMes(ya, mm);
-    const fila = (estado[k] && estado[k].hosp) || generarHospitalizacion(ya, mm);
+  if (a !== FD_REF.a || m !== FD_REF.m){
+    /* se arranca de lo que dejó el mes anterior */
+    const ant  = mesAntes(a, m);
+    const prev = contextoFD(ant.a, ant.m);
+    for (const p of HOSP) conteo[p.nombre] = prev.conteo[p.nombre] || 0;
     /* la cuenta para emparejar los FD es la de los fines de semana: los festivos
        entre semana los trabaja todo el mundo y no entran en ese emparejamiento. */
+    const fila = filaHospDeMes(ant.a, ant.m);
     for (const p of HOSP) conteo[p.nombre] += (fila[p.nombre] || [])
-      .filter((c, i) => c === 'FD' && esFinDe(ya, mm, i + 1)).length;
-    cierre    = ultimoFindeDe(fila, ya, mm);
-    cierreDia = ultimoDiaFD(fila, ya, mm);
-    pasos++;
-    mm++; if (mm > 12){ mm = 1; ya++; }
+      .filter((c, i) => c === 'FD' && esFinDe(ant.a, ant.m, i + 1)).length;
+    cierre    = ultimoFindeDe(fila, ant.a, ant.m);
+    cierreDia = ultimoDiaFD(fila, ant.a, ant.m);
   }
-  return {conteo: conteo, cierre: cierre, cierreDia: cierreDia};
+  const res = {conteo: conteo, cierre: cierre, cierreDia: cierreDia};
+  cacheFD[k] = res;
+  return copiaFD(res);
 }
+/* Si algo cambia en los turnos, la cuenta de los FD se vuelve a calcular. */
+function olvidarFD(){ cacheFD = {}; }
 
 function generarHospitalizacion(a,m){
   const dias = diasDelMes(a,m), res = {};
@@ -628,8 +658,8 @@ function generarHospitalizacion(a,m){
    ============================================================ */
 let ctx = null;
 
-function cargar(){ try{ estado = JSON.parse(localStorage.getItem(KEY)) || {}; }catch(e){ estado = {}; } }
-function guardar(){ try{ localStorage.setItem(KEY, JSON.stringify(estado)); }catch(e){} }
+function cargar(){ try{ estado = JSON.parse(localStorage.getItem(KEY)) || {}; }catch(e){ estado = {}; } olvidarFD(); }
+function guardar(){ olvidarFD(); try{ localStorage.setItem(KEY, JSON.stringify(estado)); }catch(e){} }
 
 function ajustar(fila, dias){
   const f = (fila || []).slice(0, dias).map(c => (c === '.' ? '' : c));
