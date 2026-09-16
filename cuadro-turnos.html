@@ -281,26 +281,29 @@ var SB_CLAVE  = 'Aut.Autorizaciones20.26*';
 /* ============================================================
    DATOS BASE
    ============================================================ */
+/* OJO: 'nombre' es la llave con la que se guardan los turnos (local y en Supabase):
+   no se cambia. 'titulo' es el nombre completo bien escrito, con tildes, y es el
+   que sale en el Excel y en los títulos de la pantalla. */
 const URG_ROT = [
-  {nombre:'MARIA FERNANDA CALDERON BOHORQUEZ', corto:'María F. Calderón',  off:0},
-  {nombre:'LUIGUI ALEJANDRO SOLARTE MAMIAN',   corto:'Luigui A. Solarte',  off:1},
-  {nombre:'ASTRID VANESA ALVARADO HOYOS',      corto:'Astrid V. Alvarado', off:2},
-  {nombre:'JUAN DAVID FERNÁNDEZ VALLEJO',      corto:'Juan D. Fernández',  off:3}
+  {nombre:'MARIA FERNANDA CALDERON BOHORQUEZ', corto:'María F. Calderón',  titulo:'María Fernanda Calderón Bohórquez', off:0},
+  {nombre:'LUIGUI ALEJANDRO SOLARTE MAMIAN',   corto:'Luigui A. Solarte',  titulo:'Luigui Alejandro Solarte Mamian',   off:1},
+  {nombre:'ASTRID VANESA ALVARADO HOYOS',      corto:'Astrid V. Alvarado', titulo:'Astrid Vanesa Alvarado Hoyos',      off:2},
+  {nombre:'JUAN DAVID FERNÁNDEZ VALLEJO',      corto:'Juan D. Fernández',  titulo:'Juan David Fernández Vallejo',      off:3}
 ];
 const URG_ALM = [
-  {nombre:'YAMILE ALVARADO HOYOS',              corto:'Yamile Alvarado'},
-  {nombre:'SANDRA MILENA GOMEZ FERNANDEZ',      corto:'Sandra M. Gómez'},
-  {nombre:'YEIMI ADRIANA CHITAN PECHENE',       corto:'Yeimi A. Chitán'},
-  {nombre:'ALEX FERNANDO VELASCO OBANDO',       corto:'Alex F. Velasco'},
-  {nombre:'ERIC FRANCISCO FERNANDEZ VALLEJO',   corto:'Eric F. Fernández'}
+  {nombre:'YAMILE ALVARADO HOYOS',              corto:'Yamile Alvarado',         titulo:'Yamile Alvarado Hoyos'},
+  {nombre:'SANDRA MILENA GOMEZ FERNANDEZ',      corto:'Sandra M. Gómez',         titulo:'Sandra Milena Gómez Fernández'},
+  {nombre:'YEIMI ADRIANA CHITAN PECHENE',       corto:'Yeimi A. Chitán',         titulo:'Yeimi Adriana Chitán Pechene'},
+  {nombre:'ALEX FERNANDO VELASCO OBANDO',       corto:'Alex F. Velasco',         titulo:'Alex Fernando Velasco Obando'},
+  {nombre:'ERIC FRANCISCO FERNANDEZ VALLEJO',   corto:'Eric F. Fernández',       titulo:'Eric Francisco Fernández Vallejo'}
 ];
 const HOSP = [
-  {nombre:'YEIMI ADRIANA CHITAN PECHENE',      corto:'Yeimi A. Chitán'},
-  {nombre:'ALEX FERNANDO VELASCO OBANDO',      corto:'Alex F. Velasco'},
-  {nombre:'ERIC FRANCISCO FERNANDEZ VALLEJO',  corto:'Eric F. Fernández'},
-  {nombre:'SANDRA MILENA GOMEZ FERNANDEZ',     corto:'Sandra M. Gómez'},
-  {nombre:'YAMILE ALVARADO HOYOS',             corto:'Yamile Alvarado'},
-  {nombre:'YAMILETH BERMÚDEZ GOMEZ (Monitor)', corto:'Yamileth Bermúdez (monitora)'}
+  {nombre:'YEIMI ADRIANA CHITAN PECHENE',      corto:'Yeimi A. Chitán',             titulo:'Yeimi Adriana Chitán Pechene'},
+  {nombre:'ALEX FERNANDO VELASCO OBANDO',      corto:'Alex F. Velasco',             titulo:'Alex Fernando Velasco Obando'},
+  {nombre:'ERIC FRANCISCO FERNANDEZ VALLEJO',  corto:'Eric F. Fernández',           titulo:'Eric Francisco Fernández Vallejo'},
+  {nombre:'SANDRA MILENA GOMEZ FERNANDEZ',     corto:'Sandra M. Gómez',             titulo:'Sandra Milena Gómez Fernández'},
+  {nombre:'YAMILE ALVARADO HOYOS',             corto:'Yamile Alvarado',             titulo:'Yamile Alvarado Hoyos'},
+  {nombre:'YAMILETH BERMÚDEZ GOMEZ (Monitor)', corto:'Yamileth Bermúdez (monitora)', titulo:'Yamileth Bermúdez Gómez (Monitor)'}
 ];
 const MONITORA = 'YAMILETH BERMÚDEZ GOMEZ (Monitor)';
 
@@ -470,6 +473,17 @@ function cortoDe(nombre){
   const p = URG_ROT.concat(URG_ALM, HOSP).find(x => x.nombre === nombre);
   return p ? p.corto : nombre;
 }
+/* El nombre completo bien escrito (con tildes), para el Excel y los títulos de la pantalla. */
+function largoDe(nombre){
+  const p = URG_ROT.concat(URG_ALM, HOSP).find(x => x.nombre === nombre);
+  return (p && p.titulo) ? p.titulo : nombreTitulo(nombre);
+}
+/* Nombre completo para el Excel: la primera letra de cada palabra en mayúscula y el resto en minúscula.
+   Ej.: MARIA FERNANDA CALDERON BOHORQUEZ -> Maria Fernanda Calderon Bohorquez */
+function nombreTitulo(nombre){
+  return String(nombre == null ? '' : nombre).toLocaleLowerCase('es-ES')
+    .replace(/(^|[\s.'’(])([^\s.'’(])/g, (todo, antes, letra) => antes + letra.toLocaleUpperCase('es-ES'));
+}
 function pintarTabla(id, nombres, seccion, fnHoras){
   const t = document.getElementById(id);
   const {a, m, dias} = ctx;
@@ -484,7 +498,7 @@ function pintarTabla(id, nombres, seccion, fnHoras){
   const filas = [];
   for (const n of nombres){
     const fila = estado[ctx.k][seccion][n] || [];
-    const celdas = ['<td class="nombre" title="' + n + '">' + cortoDe(n) + '</td>'];
+    const celdas = ['<td class="nombre" title="' + largoDe(n) + '">' + cortoDe(n) + '</td>'];
     for (let d = 1; d <= dias; d++){
       const c = fila[d-1] || '';
       const w = new Date(ctx.a, ctx.m-1, d).getDay();
@@ -701,7 +715,10 @@ const XLSXMIN = (() => {
       '<font><sz val="9"/><color rgb="FF4A5560"/><name val="Calibri"/></font>',             /* 10 */
       '<font><sz val="9"/><color rgb="FF4A5560"/><name val="Calibri"/></font>',             /* 11 */
       '<font><b/><sz val="9"/><color rgb="FF123C66"/><name val="Calibri"/></font>',         /* 12 */
-      '<font><b/><sz val="10"/><color rgb="FF26313D"/><name val="Calibri"/></font>'         /* 13 */
+      '<font><b/><sz val="10"/><color rgb="FF26313D"/><name val="Calibri"/></font>',        /* 13 */
+      '<font><b/><sz val="8"/><color rgb="FF123C66"/><name val="Calibri"/></font>',          /* 14 horas bajo D */
+      '<font><b/><sz val="8"/><color rgb="FF223047"/><name val="Calibri"/></font>',          /* 15 horas bajo N */
+      '<font><b/><sz val="8"/><color rgb="FF24684A"/><name val="Calibri"/></font>'           /* 16 horas bajo FD */
     ];
     const rellenos = [
       '<fill><patternFill patternType="none"/></fill>',                                     /* 0 */
@@ -714,7 +731,10 @@ const XLSXMIN = (() => {
       '<fill><patternFill patternType="solid"><fgColor rgb="FFE4F3EA"/></patternFill></fill>', /* 7 FD */
       '<fill><patternFill patternType="solid"><fgColor rgb="FFFAF1DE"/></patternFill></fill>', /* 8 d */
       '<fill><patternFill patternType="solid"><fgColor rgb="FFF2F5F9"/></patternFill></fill>', /* 9 horas */
-      '<fill><patternFill patternType="solid"><fgColor rgb="FFF5F7FA"/></patternFill></fill>'  /* 10 suave */
+      '<fill><patternFill patternType="solid"><fgColor rgb="FFF5F7FA"/></patternFill></fill>', /* 10 suave */
+      '<fill><patternFill patternType="solid"><fgColor rgb="FFF1F6FC"/></patternFill></fill>', /* 11 horas bajo D */
+      '<fill><patternFill patternType="solid"><fgColor rgb="FFF2F4F9"/></patternFill></fill>', /* 12 horas bajo N */
+      '<fill><patternFill patternType="solid"><fgColor rgb="FFEFF7F2"/></patternFill></fill>'  /* 13 horas bajo FD */
     ];
     const bordes = [
       '<border><left/><right/><top/><bottom/><diagonal/></border>',
@@ -746,7 +766,11 @@ const XLSXMIN = (() => {
       xf(3, 3, 2, izq),          /* 15 "COMPAÑERO" */
       xf(12, 3, 1, centrado),    /* 16 leyenda codigo */
       xf(11, 0, 0, '<alignment horizontal="left" vertical="center" indent="1"/>'), /* 17 leyenda texto */
-      xf(13, 10, 1, izq)         /* 18 total nombre */
+      xf(13, 10, 1, izq),        /* 18 total nombre */
+      xf(14, 11, 1, centrado),   /* 19 horas debajo de D */
+      xf(15, 12, 1, centrado),   /* 20 horas debajo de N */
+      xf(16, 13, 1, centrado),   /* 21 horas debajo de FD */
+      xf(0, 0, 1, centrado)      /* 22 fila de horas sin numero */
     ];
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
@@ -760,12 +784,49 @@ const XLSXMIN = (() => {
       '</styleSheet>';
   }
 
-  const EST = { titulo:1, subtitulo:2, cabDia:3, cabFinde:4, nombre:5, horas:6, D:7, N:8, FD:9, d:10, L:11, T:12, M:13, vacio:14, cabNombre:15, legCod:16, legTxt:17, totNombre:18 };
-  const estiloCod = c => EST[c] || (c ? EST.L : EST.vacio);
+  const EST = { titulo:1, subtitulo:2, cabDia:3, cabFinde:4, nombre:5, horas:6, D:7, N:8, FD:9, d:10, L:11, T:12, M:13, vacio:14, cabNombre:15, legCod:16, legTxt:17, totNombre:18,
+                hrsD:19, hrsN:20, hrsFD:21, hrsVacio:22 };
+  const estiloCod   = c => EST[c] || (c ? EST.L : EST.vacio);
+  /* la fila de abajo: el numero de horas que vale cada turno */
+  const estiloHoras = c => c === 'D' ? EST.hrsD : c === 'N' ? EST.hrsN : c === 'FD' ? EST.hrsFD : EST.hrsVacio;
+
+  /* ---- el logo del hospital (viene en base64 desde la pagina) ---- */
+  const ANCHO_LOGO = 118, ALTO_LOGO = 46;   /* en pixeles */
+  const EMU = px => px * 9525;              /* 1 pixel = 9525 EMU */
+  function bytesDeBase64(b64){
+    const bin = atob(b64), u = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    return u;
+  }
+  function dibujoLogo(){
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" ' +
+      'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
+      'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+      '<xdr:oneCellAnchor>' +
+      '<xdr:from><xdr:col>0</xdr:col><xdr:colOff>' + EMU(6) + '</xdr:colOff>' +
+      '<xdr:row>0</xdr:row><xdr:rowOff>' + EMU(3) + '</xdr:rowOff></xdr:from>' +
+      '<xdr:ext cx="' + EMU(ANCHO_LOGO) + '" cy="' + EMU(ALTO_LOGO) + '"/>' +
+      '<xdr:pic><xdr:nvPicPr>' +
+      '<xdr:cNvPr id="1" name="Logo Hospital Universitario San Jose" descr="Hospital Universitario San Jose"/>' +
+      '<xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr>' +
+      '<xdr:blipFill><a:blip r:embed="rId1"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill>' +
+      '<xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="' + EMU(ANCHO_LOGO) + '" cy="' + EMU(ALTO_LOGO) + '"/></a:xfrm>' +
+      '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr>' +
+      '</xdr:pic><xdr:clientData/></xdr:oneCellAnchor></xdr:wsDr>';
+  }
+  const RELS_LOGO = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" ' +
+    'Target="../media/image1.png"/></Relationships>';
+  const RELS_HOJA = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" ' +
+    'Target="../drawings/drawing1.xml"/></Relationships>';
 
   /* ---- construye el libro ---- */
   function libro(opciones){
-    const { nombreHoja, titulo, subtitulo, dias, a, m, bloques, leyenda } = opciones;
+    const { nombreHoja, titulo, subtitulo, dias, a, m, bloques, leyenda, logo } = opciones;
     const SEM = ['D','L','M','M','J','V','S'];
     const filas = [];
     const agregar = f => { filas.push(f); return f; };
@@ -776,9 +837,11 @@ const XLSXMIN = (() => {
           : '<c r="' + ref + '" s="' + est + '" t="inlineStr"><is><t xml:space="preserve">' + esc(txt) + '</t></is></c>');
 
     let r = 1;
+    /* la primera fila es para el logo del hospital, arriba a la izquierda */
+    if (logo) { agregar('<row r="' + r + '" ht="54" customHeight="1"/>'); r++; }
     /* titulo */
-    agregar('<row r="' + r + '" ht="26" customHeight="1">' + celda('A' + r, EST.titulo, titulo) + '</row>'); r++;
-    let comb = ['A1:AG1'];
+    agregar('<row r="' + r + '" ht="26" customHeight="1">' + celda('A' + r, EST.titulo, titulo) + '</row>');
+    let comb = ['A' + r + ':AG' + r]; r++;
     /* bloques */
     let primera = true;
     for (const b of bloques){
@@ -796,16 +859,30 @@ const XLSXMIN = (() => {
       }
       cab += celda('AG' + r, EST.cabNombre, 'HORAS');
       agregar('<row r="' + r + '" ht="30" customHeight="1">' + cab + '</row>'); r++;
-      /* personas */
+      /* personas: arriba el turno y debajo, pegada, la fila con las horas del turno */
+      const horasDe = HORAS_COD[b.seccion] || {};
       for (const p of b.personas){
-        let fila = celda('A' + r, EST.nombre, p.nombre);
+        let fila  = celda('A' + r, EST.nombre, p.nombre);
+        let filaH = celda('A' + (r + 1), EST.nombre, '');
         for (let d = 1; d <= 31; d++){
-          const ref = LETRA(1 + d) + r;
-          if (d <= dias){ const c = p.codigos[d - 1] || ''; fila += celda(ref, estiloCod(c), c); }
-          else { fila += celda(ref, EST.vacio, ''); }
+          const ref = LETRA(1 + d) + r, refH = LETRA(1 + d) + (r + 1);
+          if (d <= dias){
+            const c = p.codigos[d - 1] || '';
+            const h = horasDe[c];
+            fila  += celda(ref,  estiloCod(c), c);
+            filaH += celda(refH, h ? estiloHoras(c) : EST.hrsVacio, h || '');
+          } else {
+            fila  += celda(ref,  EST.vacio, '');
+            filaH += celda(refH, EST.hrsVacio, '');
+          }
         }
-        fila += celda('AG' + r, EST.horas, p.horas);
-        agregar('<row r="' + r + '" ht="17" customHeight="1">' + fila + '</row>'); r++;
+        fila  += celda('AG' + r, EST.horas, p.horas);
+        filaH += celda('AG' + (r + 1), EST.horas, '');
+        /* el nombre y el total de horas quedan centrados sobre las dos filas */
+        comb.push('A' + r + ':A' + (r + 1), 'AG' + r + ':AG' + (r + 1));
+        agregar('<row r="' + r + '" ht="17" customHeight="1">' + fila + '</row>');
+        agregar('<row r="' + (r + 1) + '" ht="13" customHeight="1">' + filaH + '</row>');
+        r += 2;
       }
       /* una fila de aire entre bloques */
       agregar('<row r="' + r + '" ht="9" customHeight="1"/>'); r++;
@@ -838,15 +915,18 @@ const XLSXMIN = (() => {
       '<mergeCells count="' + comb.length + '">' + comb.map(x => '<mergeCell ref="' + x + '"/>').join('') + '</mergeCells>' +
       '<pageMargins left="0.25" right="0.25" top="0.4" bottom="0.4" header="0.2" footer="0.2"/>' +
       '<pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/>' +
+      (logo ? '<drawing r:id="rId1"/>' : '') +
       '</worksheet>';
 
     const ct = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
       '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
       '<Default Extension="xml" ContentType="application/xml"/>' +
+      (logo ? '<Default Extension="png" ContentType="image/png"/>' : '') +
       '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
       '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
       '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+      (logo ? '<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>' : '') +
       '</Types>';
     const rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
@@ -862,14 +942,23 @@ const XLSXMIN = (() => {
       '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
       '</Relationships>';
 
-    return zip([
+    const archivos = [
       { nombre: '[Content_Types].xml',     datos: enc.encode(ct) },
       { nombre: '_rels/.rels',             datos: enc.encode(rels) },
       { nombre: 'xl/workbook.xml',         datos: enc.encode(wb) },
       { nombre: 'xl/_rels/workbook.xml.rels', datos: enc.encode(wbRels) },
       { nombre: 'xl/styles.xml',           datos: enc.encode(estilos()) },
       { nombre: 'xl/worksheets/sheet1.xml', datos: enc.encode(hoja) }
-    ]);
+    ];
+    if (logo){
+      archivos.push(
+        { nombre: 'xl/media/image1.png',           datos: bytesDeBase64(logo) },
+        { nombre: 'xl/drawings/drawing1.xml',      datos: enc.encode(dibujoLogo()) },
+        { nombre: 'xl/drawings/_rels/drawing1.xml.rels',   datos: enc.encode(RELS_LOGO) },
+        { nombre: 'xl/worksheets/_rels/sheet1.xml.rels',   datos: enc.encode(RELS_HOJA) }
+      );
+    }
+    return zip(archivos);
   }
 
   return { libro };
@@ -881,17 +970,21 @@ function descargarExcel(){
   const {a, m, dias, k} = ctx;
   const d = estado[k];
   const mes = MESES[m-1];
+  /* en el Excel el nombre va completo, con tildes y con la primera letra de cada palabra en mayúscula */
   const personasUrg = URG_ROT.concat(URG_ALM).map(p => ({
-    nombre: p.nombre, codigos: d.urg[p.nombre], horas: horasUrg(d.urg[p.nombre]) }));
+    nombre: largoDe(p.nombre), codigos: d.urg[p.nombre], horas: horasUrg(d.urg[p.nombre]) }));
   const personasHosp = HOSP.map(p => ({
-    nombre: p.nombre, codigos: d.hosp[p.nombre], horas: horasHosp(d.hosp[p.nombre]) }));
+    nombre: largoDe(p.nombre), codigos: d.hosp[p.nombre], horas: horasHosp(d.hosp[p.nombre]) }));
+  /* el logo que ya está en la página, para que salga arriba del cuadro */
+  const imgLogo = document.querySelector('header.top .logo, .entrada-logo');
+  const logo = imgLogo && imgLogo.src.indexOf('base64,') > 0 ? imgLogo.src.split('base64,')[1] : null;
   const bytes = XLSXMIN.libro({
     nombreHoja: mes.charAt(0).toUpperCase() + mes.slice(1) + ' ' + a,
     titulo: 'CUADRO DE TURNOS  ·  CENTRAL DE AUTORIZACIONES',
-    dias, a, m,
+    dias, a, m, logo,
     bloques: [
-      { titulo: 'URGENCIAS  ·  ' + mes.toUpperCase() + ' ' + a, personas: personasUrg },
-      { titulo: 'HOSPITALIZACIÓN  ·  ' + mes.toUpperCase() + ' ' + a, personas: personasHosp }
+      { titulo: 'URGENCIAS  ·  ' + mes.toUpperCase() + ' ' + a, seccion: 'urg',  personas: personasUrg },
+      { titulo: 'HOSPITALIZACIÓN  ·  ' + mes.toUpperCase() + ' ' + a, seccion: 'hosp', personas: personasHosp }
     ],
     leyenda: [
       { codigo: 'D',  texto: 'día · 12 h' },
