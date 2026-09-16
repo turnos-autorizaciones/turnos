@@ -770,7 +770,8 @@ const XLSXMIN = (() => {
       xf(14, 11, 1, centrado),   /* 19 horas debajo de D */
       xf(15, 12, 1, centrado),   /* 20 horas debajo de N */
       xf(16, 13, 1, centrado),   /* 21 horas debajo de FD */
-      xf(0, 0, 1, centrado)      /* 22 fila de horas sin numero */
+      xf(0, 0, 1, centrado),     /* 22 fila de horas sin numero */
+      xf(0, 0, 1, centrado)      /* 23 recuadro del logo, arriba a la izquierda */
     ];
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
@@ -785,13 +786,13 @@ const XLSXMIN = (() => {
   }
 
   const EST = { titulo:1, subtitulo:2, cabDia:3, cabFinde:4, nombre:5, horas:6, D:7, N:8, FD:9, d:10, L:11, T:12, M:13, vacio:14, cabNombre:15, legCod:16, legTxt:17, totNombre:18,
-                hrsD:19, hrsN:20, hrsFD:21, hrsVacio:22 };
+                hrsD:19, hrsN:20, hrsFD:21, hrsVacio:22, cabLogo:23 };
   const estiloCod   = c => EST[c] || (c ? EST.L : EST.vacio);
   /* la fila de abajo: el numero de horas que vale cada turno */
   const estiloHoras = c => c === 'D' ? EST.hrsD : c === 'N' ? EST.hrsN : c === 'FD' ? EST.hrsFD : EST.hrsVacio;
 
   /* ---- el logo del hospital (viene en base64 desde la pagina) ---- */
-  const ANCHO_LOGO = 118, ALTO_LOGO = 46;   /* en pixeles */
+  const ANCHO_LOGO = 256, ALTO_LOGO = 100;  /* en pixeles */
   const EMU = px => px * 9525;              /* 1 pixel = 9525 EMU */
   function bytesDeBase64(b64){
     const bin = atob(b64), u = new Uint8Array(bin.length);
@@ -804,8 +805,8 @@ const XLSXMIN = (() => {
       'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" ' +
       'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
       '<xdr:oneCellAnchor>' +
-      '<xdr:from><xdr:col>0</xdr:col><xdr:colOff>' + EMU(6) + '</xdr:colOff>' +
-      '<xdr:row>0</xdr:row><xdr:rowOff>' + EMU(3) + '</xdr:rowOff></xdr:from>' +
+      '<xdr:from><xdr:col>0</xdr:col><xdr:colOff>' + EMU(16) + '</xdr:colOff>' +
+      '<xdr:row>0</xdr:row><xdr:rowOff>' + EMU(6) + '</xdr:rowOff></xdr:from>' +
       '<xdr:ext cx="' + EMU(ANCHO_LOGO) + '" cy="' + EMU(ALTO_LOGO) + '"/>' +
       '<xdr:pic><xdr:nvPicPr>' +
       '<xdr:cNvPr id="1" name="Logo Hospital Universitario San Jose" descr="Hospital Universitario San Jose"/>' +
@@ -837,15 +838,21 @@ const XLSXMIN = (() => {
           : '<c r="' + ref + '" s="' + est + '" t="inlineStr"><is><t xml:space="preserve">' + esc(txt) + '</t></is></c>');
 
     let r = 1;
-    /* la primera fila es para el logo del hospital, arriba a la izquierda */
-    if (logo) { agregar('<row r="' + r + '" ht="54" customHeight="1"/>'); r++; }
+    const comb = [];
+    /* la primera fila es la cabecera: el logo del hospital en un recuadro, arriba a la izquierda */
+    if (logo) {
+      agregar('<row r="' + r + '" ht="84" customHeight="1">' +
+        celda('A' + r, EST.cabLogo, '') + celda('B' + r, EST.cabLogo, '') + '</row>');
+      comb.push('A' + r + ':B' + r);
+      r++;
+    }
     /* titulo */
     agregar('<row r="' + r + '" ht="26" customHeight="1">' + celda('A' + r, EST.titulo, titulo) + '</row>');
-    let comb = ['A' + r + ':AG' + r]; r++;
+    comb.push('A' + r + ':AG' + r); r++;
     /* bloques */
     let primera = true;
     for (const b of bloques){
-      agregar('<row r="' + r + '" ht="20" customHeight="1">' + celda('A' + r, EST.subtitulo, b.titulo) + '</row>');
+      agregar('<row r="' + r + '" ht="17" customHeight="1">' + celda('A' + r, EST.subtitulo, b.titulo) + '</row>');
       comb.push('A' + r + ':AG' + r); r++;
       /* cabecera de dias */
       let cab = celda('A' + r, EST.cabNombre, 'COMPAÑERO');
@@ -858,7 +865,7 @@ const XLSXMIN = (() => {
         } else { cab += celda(ref, EST.vacio, ''); }
       }
       cab += celda('AG' + r, EST.cabNombre, 'HORAS');
-      agregar('<row r="' + r + '" ht="30" customHeight="1">' + cab + '</row>'); r++;
+      agregar('<row r="' + r + '" ht="28" customHeight="1">' + cab + '</row>'); r++;
       /* personas: arriba el turno y debajo, pegada, la fila con las horas del turno */
       const horasDe = HORAS_COD[b.seccion] || {};
       for (const p of b.personas){
@@ -880,12 +887,12 @@ const XLSXMIN = (() => {
         filaH += celda('AG' + (r + 1), EST.horas, '');
         /* el nombre y el total de horas quedan centrados sobre las dos filas */
         comb.push('A' + r + ':A' + (r + 1), 'AG' + r + ':AG' + (r + 1));
-        agregar('<row r="' + r + '" ht="17" customHeight="1">' + fila + '</row>');
-        agregar('<row r="' + (r + 1) + '" ht="13" customHeight="1">' + filaH + '</row>');
+        agregar('<row r="' + r + '" ht="14" customHeight="1">' + fila + '</row>');
+        agregar('<row r="' + (r + 1) + '" ht="12" customHeight="1">' + filaH + '</row>');
         r += 2;
       }
       /* una fila de aire entre bloques */
-      agregar('<row r="' + r + '" ht="9" customHeight="1"/>'); r++;
+      agregar('<row r="' + r + '" ht="5" customHeight="1"/>'); r++;
       if (primera){ primera = false; }
     }
     /* leyenda */
@@ -899,7 +906,7 @@ const XLSXMIN = (() => {
         comb.push(ref2);
         col += 4;
       }
-      agregar('<row r="' + r + '" ht="20" customHeight="1">' + fila + '</row>'); r++;
+      agregar('<row r="' + r + '" ht="18" customHeight="1">' + fila + '</row>'); r++;
     }
 
     const anchos = '<cols><col min="1" max="1" width="36" customWidth="1"/>' +
