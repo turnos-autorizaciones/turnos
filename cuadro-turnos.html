@@ -60,6 +60,10 @@ thead th{
 thead th.dia{min-width:29px}
 thead th.fin{background:#faf0d7;color:#8a6420}
 td.fin{background:#fcf8ec}
+/* los festivos: la columna queda marcada en la cabecera y el que trabaja ese dia va en FD */
+thead th.fest{background:var(--fp-ok-soft);color:var(--ink-g)}
+td.fest{background:#f7fbf9}
+.nota.festivos{margin:8px 0 10px}
 .entrada{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:22px;
   background:linear-gradient(165deg,#0e3a63 0%,#0a2b4a 100%);overflow:auto}
 .entrada[hidden]{display:none}
@@ -239,8 +243,11 @@ var SB_CUENTA = 'autorizacioneshospitalarias@hospitalsanjose.gov.co';   /* solo 
    Turnos de 8 h. Entre semana todos hacen <strong>D</strong>; los fines de semana cubren <strong>FD</strong> de a dos personas, turnándose. YAMILETH (monitora) no hace fines de semana.
    El reparto de los <strong>FD</strong> va solo y cumple tres reglas: quien cierra el último fin de semana del mes no abre el del mes siguiente,
    nadie hace FD dos fines de semana seguidos, y el que llevó más FD en los meses anteriores va de último para emparejar (la cuenta arranca en septiembre).
-</p>
+   Los <strong>festivos</strong> también van en <strong>FD</strong> (8 h): ese día trabaja todo el mundo igual que entre semana,
+   solo que el turno queda en FD y la columna sale marcada en la cabecera.
+ </p>
 <div class="scroll"><table id="tablaHosp"><thead></thead><tbody></tbody></table></div>
+<p class="nota festivos" id="notaFestivos"></p>
 
 <div id="avisos" class="avisos"></div>
 
@@ -250,7 +257,7 @@ var SB_CUENTA = 'autorizacioneshospitalarias@hospitalsanjose.gov.co';   /* solo 
 <div class="leyenda">
   <span><i class="mini cod D">D</i> día · 12 h</span>
   <span><i class="mini cod N">N</i> noche · 12 h</span>
-  <span><i class="mini cod FD">FD</i> fin de semana / hospitalización · 8 h</span>
+  <span><i class="mini cod FD">FD</i> fin de semana o festivo · hospitalización · 8 h</span>
   <span><i class="mini cod d">d</i> almuerzo · ½ h</span>
   <span><i class="mini cod n">n</i> disponible noche · 0 h</span>
   <span><i class="mini cod L">L</i> libre</span>
@@ -272,7 +279,7 @@ var SB_CUENTA = 'autorizacioneshospitalarias@hospitalsanjose.gov.co';   /* solo 
 
 <p class="pie">
   Haz clic en cualquier casilla para cambiar el turno. Se guarda solo en este navegador, o en Supabase cuando entras abajo.<br>
-  Las horas salen así: en urgencias 12 h por D, N y FD, 6 h por T y M, y ½ h por cada d; en hospitalización 8 h por D y por FD.<br>
+  Las horas salen así: en urgencias 12 h por D, N y FD, 6 h por T y M, y ½ h por cada d; en hospitalización 8 h por D y por FD (los festivos también van en FD, con sus 8 h).<br>
   Debajo de cada turno va el número de horas que vale: 12 h en urgencias (D y N) y 8 h en hospitalización (D y FD).
 </p>
 
@@ -342,6 +349,102 @@ const COD_HOSP = ['D','FD','G1','C',''];
    Urgencias: D y N valen 12 h. Hospitalizacion: D y FD valen 8 h.
    Si algún día cambian las horas, se cambia aquí y queda en todo el cuadro. */
 const HORAS_COD = { urg:{D:12, N:12}, hosp:{D:8, FD:8} };
+
+/* ============================================================
+   FESTIVOS DE COLOMBIA  (para hospitalizacion)
+   En hospitalizacion el que trabaja un festivo queda en FD (8 h),
+   igual que un fin de semana, y la columna del dia sale marcada.
+   Los festivos son los de la ley, para cualquier ano:
+     - Ley 51 de 1983 (Ley Emiliani): los que caen entre semana se
+       trasladan al lunes siguiente.
+     - Fechas fijas que NO se trasladan: 1 ene, 1 may, 20 jul, 7 ago,
+       8 dic, 25 dic, y la Semana Santa (jueves y viernes santo).
+     - Ley 2578 de 2026: agrega Nuestra Senora del Rosario de
+       Chiquinquirá (9 de julio, se traslada al lunes). Rige desde 2026.
+   ============================================================ */
+const FEST_FIJOS = [
+  {f:'01-01', n:'Año Nuevo'},
+  {f:'05-01', n:'Día del Trabajo'},
+  {f:'07-20', n:'Día de la Independencia'},
+  {f:'08-07', n:'Batalla de Boyacá'},
+  {f:'12-08', n:'Inmaculada Concepción'},
+  {f:'12-25', n:'Navidad'}
+];
+const FEST_LUNES = [
+  {f:'01-06', n:'Día de los Reyes Magos'},
+  {f:'03-19', n:'Día de San José'},
+  {f:'06-29', n:'San Pedro y San Pablo'},
+  {f:'07-09', n:'Nuestra Señora del Rosario de Chiquinquirá', desde:2026},
+  {f:'08-15', n:'Asunción de la Virgen'},
+  {f:'10-12', n:'Día de la Raza'},
+  {f:'11-01', n:'Día de Todos los Santos'},
+  {f:'11-11', n:'Independencia de Cartagena'}
+];
+/* Marca de version del marcado: a los meses que ya estaban guardados sin
+   esta marca se les ponen los festivos en FD una sola vez. */
+const FEST_MARCA = 2;
+
+/* domingo de Pascua (algoritmo de Gauss/Meeus) */
+function pascua(a){
+  const A = a % 19, B = Math.floor(a / 100), C = a % 100;
+  const D = Math.floor(B / 4), E = B % 4;
+  const F = Math.floor((B + 8) / 25), G = Math.floor((B - F + 1) / 3);
+  const H = (19*A + B - D - G + 15) % 30;
+  const I = Math.floor(C / 4), K = C % 4;
+  const L = (32 + 2*E + 2*I - H - K) % 7;
+  const M = Math.floor((A + 11*H + 22*L) / 451);
+  const mes = Math.floor((H + L - 7*M + 114) / 31);
+  const dia = ((H + L - 7*M + 114) % 31) + 1;
+  return new Date(a, mes - 1, dia);
+}
+/* el lunes siguiente (si el dia ya es lunes, se queda) */
+function lunesSiguiente(f){
+  const x = new Date(f.getTime());
+  x.setDate(x.getDate() + ((8 - x.getDay()) % 7));
+  return x;
+}
+const claveDia = f => String(f.getMonth()+1).padStart(2,'0') + '-' + String(f.getDate()).padStart(2,'0');
+
+const cacheFestivos = {};
+/* Los festivos del ano: { 'MM-DD': 'nombre' } */
+function festivosAnio(a){
+  if (cacheFestivos[a]) return cacheFestivos[a];
+  const lista = {};
+  const pon = (f, n) => { lista[claveDia(f)] = n; };
+  const fecha = x => new Date(a, +x.f.slice(0,2) - 1, +x.f.slice(3));
+  for (const x of FEST_FIJOS) pon(fecha(x), x.n);
+  for (const x of FEST_LUNES){
+    if (x.desde && a < x.desde) continue;
+    pon(lunesSiguiente(fecha(x)), x.n);
+  }
+  const p = pascua(a);
+  const mueve = n => { const f = new Date(p.getTime()); f.setDate(f.getDate() + n); return f; };
+  pon(mueve(-3), 'Jueves Santo');
+  pon(mueve(-2), 'Viernes Santo');
+  pon(mueve(43), 'Ascensión del Señor');
+  pon(mueve(64), 'Corpus Christi');
+  pon(mueve(71), 'Sagrado Corazón de Jesús');
+  cacheFestivos[a] = lista;
+  return lista;
+}
+/* El nombre del festivo de ese dia, o '' si no es festivo. */
+function festivoDe(a, m, d){
+  return festivosAnio(a)[String(m).padStart(2,'0') + '-' + String(d).padStart(2,'0')] || '';
+}
+const esFestivo = (a, m, d) => festivoDe(a, m, d) !== '';
+const esFinDe   = (a, m, d) => { const w = new Date(a, m-1, d).getDay(); return w === 0 || w === 6; };
+
+/* Los festivos van en FD: lo que estaba como D (dia normal entre semana) pasa a FD.
+   Solo toca los dias festivos; el fin de semana se reparte como siempre. */
+function marcarFestivos(a, m, filaHosp, dias){
+  for (const p of HOSP){
+    const f = filaHosp && filaHosp[p.nombre];
+    if (!f) continue;
+    for (let d = 1; d <= dias; d++)
+      if (f[d-1] === 'D' && esFestivo(a, m, d)) f[d-1] = 'FD';
+  }
+}
+
 const CICLO = ['N','n','L','D'];
 const EPOCH = new Date(2026,8,1);      /* 1 de septiembre de 2026 */
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -446,6 +549,10 @@ function ultimoFindeDe(fila, a, m){
 /* quiénes hicieron FD el último día del mes (el sábado, para pasar el domingo al mes siguiente) */
 function ultimoDiaFD(fila, a, m){
   const dias = diasDelMes(a, m), f2 = fila || {};
+  /* Esto es para pasar el domingo al mes siguiente: solo tiene sentido si el mes
+     termina en sábado (el fin de semana que queda partido). Un festivo entre semana
+     que caiga en el último día NO arrastra nada al mes siguiente. */
+  if (new Date(a, m-1, dias).getDay() !== 6) return [];
   return HOSP.filter(p => (f2[p.nombre] || [])[dias-1] === 'FD').map(p => p.nombre);
 }
 /* Cómo está la repartición al empezar el mes (a,m): cuántos FD lleva cada uno desde
@@ -459,7 +566,10 @@ function contextoFD(a, m){
   while ((ya < a || (ya === a && mm < m)) && pasos < 120){
     const k = claveMes(ya, mm);
     const fila = (estado[k] && estado[k].hosp) || generarHospitalizacion(ya, mm);
-    for (const p of HOSP) conteo[p.nombre] += (fila[p.nombre] || []).filter(c => c === 'FD').length;
+    /* la cuenta para emparejar los FD es la de los fines de semana: los festivos
+       entre semana los trabaja todo el mundo y no entran en ese emparejamiento. */
+    for (const p of HOSP) conteo[p.nombre] += (fila[p.nombre] || [])
+      .filter((c, i) => c === 'FD' && esFinDe(ya, mm, i + 1)).length;
     cierre    = ultimoFindeDe(fila, ya, mm);
     cierreDia = ultimoDiaFD(fila, ya, mm);
     pasos++;
@@ -479,6 +589,11 @@ function generarHospitalizacion(a,m){
       const w = new Date(a,m-1,d).getDay();
       if (w!==0 && w!==6) res[p.nombre][d-1] = 'D';
     }
+
+  /* festivos: ese día el que trabaja va en FD (8 h), igual que un fin de semana.
+     Se hace antes de repartir los fines de semana, y no los toca: el sábado y el
+     domingo siguen cubriéndose de a dos personas. */
+  marcarFestivos(a, m, res, dias);
 
   const {conteo, cierre, cierreDia} = contextoFD(a, m);
 
@@ -536,6 +651,14 @@ function mesActual(){
   }
   for (const sec of ['urg','hosp'])
     for (const n in estado[k][sec]) estado[k][sec][n] = ajustar(estado[k][sec][n], dias);
+
+  /* Los festivos en FD. A los meses que ya estaban guardados (de antes de esta
+     mejora) se les marca una sola vez; después se respeta lo que se ajuste a mano. */
+  if (estado[k].fest !== FEST_MARCA){
+    marcarFestivos(a, m, estado[k].hosp, dias);
+    estado[k].fest = FEST_MARCA;
+    guardar();
+  }
   return {a, m, k, dias};
 }
 
@@ -563,7 +686,9 @@ function pintarTabla(id, nombres, seccion, fnHoras){
   const cab = ['<tr><th class="nombre">Compañero</th>'];
   for (let d = 1; d <= dias; d++){
     const w = new Date(a, m-1, d).getDay();
-    cab.push('<th class="dia' + ((w===0||w===6) ? ' fin' : '') + '">' + d + '<br>' + DIAS[w] + '</th>');
+    const fest = festivoDe(a, m, d);
+    cab.push('<th class="dia' + ((w===0||w===6) ? ' fin' : '') + (fest ? ' fest' : '') + '"' +
+      (fest ? ' title="Festivo: ' + fest + '"' : '') + '>' + d + '<br>' + DIAS[w] + '</th>');
   }
   cab.push('<th class="dia" style="min-width:74px">Horas</th></tr>');
   t.querySelector('thead').innerHTML = cab.join('');
@@ -576,7 +701,8 @@ function pintarTabla(id, nombres, seccion, fnHoras){
       const c = fila[d-1] || '';
       const w = new Date(ctx.a, ctx.m-1, d).getDay();
       const horas = (HORAS_COD[seccion] || {})[c];
-      celdas.push('<td class="celda' + ((w===0 || w===6) ? ' fin' : '') + '" data-n="' + n + '" data-d="' + d + '">' +
+      celdas.push('<td class="celda' + ((w===0 || w===6) ? ' fin' : '') + (festivoDe(ctx.a, ctx.m, d) ? ' fest' : '') +
+        '" data-n="' + n + '" data-d="' + d + '">' +
         '<span class="cod ' + (c || 'vacio') + '" data-n="' + n + '" data-d="' + d + '">' + (c || '·') + '</span>' +
         (horas ? '<small class="hrs ' + c + '" title="' + fmt(horas) + ' h en este turno">' + fmt(horas) + '</small>' : '') +
         '</td>');
@@ -586,8 +712,15 @@ function pintarTabla(id, nombres, seccion, fnHoras){
       const nD = fila.filter(c => c === 'd').length;
       if (nD) extra = '<small>' + nD + ' × ½ h de almuerzo</small>';
     } else {
-      const nFD = fila.filter(c => c === 'FD').length;
-      if (nFD) extra = '<small>' + nFD + ' fin de semana</small>';
+      let nFinde = 0, nFest = 0;
+      for (let d = 1; d <= dias; d++){
+        if ((fila[d-1] || '') !== 'FD') continue;
+        if (esFinDe(ctx.a, ctx.m, d)) nFinde++; else nFest++;
+      }
+      const partes = [];
+      if (nFinde) partes.push(nFinde + ' fin de semana');
+      if (nFest)  partes.push(nFest + ' festivo' + (nFest === 1 ? '' : 's'));
+      if (partes.length) extra = '<small>' + partes.join(' · ') + '</small>';
     }
     celdas.push('<td class="horas">' + fmt(fnHoras(fila)) + ' h' + extra + '</td>');
     filas.push('<tr>' + celdas.join('') + '</tr>');
@@ -624,10 +757,29 @@ function pintarTotales(){
   }
   for (const p of HOSP){
     const f = hosp[p.nombre] || [];
-    const nD = f.filter(c=>c==='D').length, nFD = f.filter(c=>c==='FD').length;
-    anota(p, 'Hospitalización', f, horasHosp, nD + ' días · ' + nFD + ' fin de semana');
+    const nD = f.filter(c=>c==='D').length;
+    let nFinde = 0, nFest = 0;
+    f.forEach((c, i) => { if (c !== 'FD') return; if (esFinDe(ctx.a, ctx.m, i+1)) nFinde++; else nFest++; });
+    anota(p, 'Hospitalización', f, horasHosp, nD + ' días · ' + nFinde + ' fin de semana' +
+      (nFest ? ' · ' + nFest + ' festivo' + (nFest === 1 ? '' : 's') : ''));
   }
   $('#tablaTotales').innerHTML = filas.join('');
+}
+
+/* La lista de festivos del mes que se está viendo, debajo del cuadro de hospitalización. */
+function pintarFestivos(){
+  const {a, m, dias} = ctx;
+  const el = $('#notaFestivos');
+  if (!el) return;
+  const lista = [];
+  for (let d = 1; d <= dias; d++){
+    const n = festivoDe(a, m, d);
+    if (n) lista.push('<strong>' + d + '</strong> (' + DIAS[new Date(a, m-1, d).getDay()] + ') ' + n);
+  }
+  el.innerHTML = lista.length
+    ? 'Festivos de ' + MESES[m-1] + ': ' + lista.join(' · ') +
+      '. Esos días van en <strong>FD</strong>, con 8 h debajo.'
+    : 'En ' + MESES[m-1] + ' no hay festivos: los turnos de hospitalización salen como siempre (D entre semana, FD los fines de semana).';
 }
 
 function pintarAvisos(){
@@ -680,10 +832,20 @@ function pintarAvisos(){
                    MESES[m-1] + ' (no puede repetir)');
   }
 
+  /* 5. hospitalización: los festivos van en FD (8 h) */
+  for (let d = 1; d <= dias; d++){
+    const nom = festivoDe(a, m, d);
+    if (!nom) continue;
+    const enD = HOSP.filter(p => (hosp[p.nombre] || [])[d-1] === 'D').map(p => p.corto);
+    if (enD.length)
+      lista.push('Hospitalización, festivo del ' + d + ' (' + nom + '): ' + enD.join(', ') +
+                 (enD.length === 1 ? ' está' : ' están') + ' en D, y el festivo va en FD (8 h)');
+  }
+
   const caja = $('#avisos');
   if (!lista.length){
     caja.className = 'avisos ok';
-    caja.innerHTML = '<h3>Todo cuadra</h3><ul><li>Hay cobertura de día y de noche todos los días, no hay noches pegadas a un día y los fines de semana están repartidos de a dos.</li></ul>';
+    caja.innerHTML = '<h3>Todo cuadra</h3><ul><li>Hay cobertura de día y de noche todos los días, no hay noches pegadas a un día, los fines de semana están repartidos de a dos y los festivos quedan en FD.</li></ul>';
   } else {
     caja.className = 'avisos';
     caja.innerHTML = '<h3>' + lista.length + ' cosa' + (lista.length === 1 ? '' : 's') + ' por revisar</h3><ul>' +
@@ -699,6 +861,7 @@ function render(){
   pintarTabla('tablaHosp', HOSP.map(p => p.nombre),                     'hosp', horasHosp);
   pintarCuentas();
   pintarTotales();
+  pintarFestivos();
   pintarAvisos();
   if (typeof trasPintar === 'function') trasPintar();
 }
@@ -864,9 +1027,10 @@ const XLSXMIN = (() => {
       xf(14, 11, 1, centrado),   /* 19 horas debajo de D */
       xf(15, 12, 1, centrado),   /* 20 horas debajo de N */
       xf(16, 13, 1, centrado),   /* 21 horas debajo de FD */
-      xf(0, 0, 1, centrado),     /* 22 fila de horas sin numero */
-      xf(0, 0, 1, centrado)      /* 23 recuadro del logo, arriba a la izquierda */
-    ];
+       xf(0, 0, 1, centrado),     /* 22 fila de horas sin numero */
+       xf(0, 0, 1, centrado),     /* 23 recuadro del logo, arriba a la izquierda */
+       xf(8, 7, 2, envuelto)      /* 24 cabecera de un festivo: verde, como el FD */
+     ];
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
       '<fonts count="' + fuentes.length + '">' + fuentes.join('') + '</fonts>' +
@@ -880,7 +1044,7 @@ const XLSXMIN = (() => {
   }
 
   const EST = { titulo:1, subtitulo:2, cabDia:3, cabFinde:4, nombre:5, horas:6, D:7, N:8, FD:9, d:10, L:11, T:12, M:13, vacio:14, cabNombre:15, legCod:16, legTxt:17, totNombre:18,
-                hrsD:19, hrsN:20, hrsFD:21, hrsVacio:22, cabLogo:23 };
+                hrsD:19, hrsN:20, hrsFD:21, hrsVacio:22, cabLogo:23, cabFest:24 };
   const estiloCod   = c => EST[c] || (c ? EST.L : EST.vacio);
   /* la fila de abajo: el numero de horas que vale cada turno */
   const estiloHoras = c => c === 'D' ? EST.hrsD : c === 'N' ? EST.hrsN : c === 'FD' ? EST.hrsFD : EST.hrsVacio;
@@ -955,7 +1119,8 @@ const XLSXMIN = (() => {
         if (d <= dias){
           const w = new Date(a, m - 1, d).getDay();
           const fin = (w === 0 || w === 6);
-          cab += celda(ref, fin ? EST.cabFinde : EST.cabDia, d + '\n' + SEM[w]);
+          const fest = festivoDe(a, m, d) !== '';
+          cab += celda(ref, fest ? EST.cabFest : (fin ? EST.cabFinde : EST.cabDia), d + '\n' + SEM[w]);
         } else { cab += celda(ref, EST.vacio, ''); }
       }
       cab += celda('AG' + r, EST.cabNombre, 'HORAS');
@@ -1090,7 +1255,7 @@ function descargarExcel(){
     leyenda: [
       { codigo: 'D',  texto: 'día · 12 h' },
       { codigo: 'N',  texto: 'noche · 12 h' },
-      { codigo: 'FD', texto: 'hospitalización · 8 h' },
+      { codigo: 'FD', texto: 'fin de semana o festivo · 8 h' },
       { codigo: 'd',  texto: 'almuerzo · ½ h' },
       { codigo: 'L',  texto: 'libre' },
       { codigo: 'l',  texto: 'disponible día' },
