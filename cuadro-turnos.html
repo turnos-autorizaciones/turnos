@@ -111,7 +111,15 @@ th.nombre,td.nombre{
 thead th.nombre{z-index:3}
 tbody tr+tr td{border-top:1px solid var(--line)}
 tbody tr:hover td{background:#fcfdfe}
-td.celda{padding:3px 2px}
+td.celda{padding:3px 2px 4px;vertical-align:top}
+/* el numero de horas que va debajo de cada turno */
+.celda .hrs{
+  display:block;font-size:10px;font-weight:600;line-height:1.2;margin-top:1px;
+  letter-spacing:.2px;color:var(--mut);font-variant-numeric:tabular-nums;
+}
+.celda .hrs.D{color:var(--ink-p)}
+.celda .hrs.N{color:var(--ink-v)}
+.celda .hrs.FD{color:var(--ink-g)}
 .cod{
   display:block;width:100%;min-height:26px;line-height:26px;border-radius:7px;
   font-size:var(--fs-sm);font-weight:600;border:1px solid transparent;cursor:pointer;
@@ -261,7 +269,8 @@ var SB_CLAVE  = 'Aut.Autorizaciones20.26*';
 
 <p class="pie">
   Haz clic en cualquier casilla para cambiar el turno. Se guarda solo en este navegador, o en Supabase cuando entras abajo.<br>
-  Las horas salen así: en urgencias 12 h por D, N y FD, 6 h por T y M, y ½ h por cada d; en hospitalización 8 h por D y por FD.
+  Las horas salen así: en urgencias 12 h por D, N y FD, 6 h por T y M, y ½ h por cada d; en hospitalización 8 h por D y por FD.<br>
+  Debajo de cada turno va el número de horas que vale: 12 h en urgencias (D y N) y 8 h en hospitalización (D y FD).
 </p>
 
 </div>
@@ -323,6 +332,10 @@ const SEPTIEMBRE = {
 
 const COD_URG  = ['D','N','L','n','l','d','FD','T','M',''];
 const COD_HOSP = ['D','FD','G1','C',''];
+/* Horas de cada turno: esto es lo que sale debajo del cuadro.
+   Urgencias: D y N valen 12 h. Hospitalizacion: D y FD valen 8 h.
+   Si algún día cambian las horas, se cambia aquí y queda en todo el cuadro. */
+const HORAS_COD = { urg:{D:12, N:12}, hosp:{D:8, FD:8} };
 const CICLO = ['N','n','L','D'];
 const EPOCH = new Date(2026,8,1);      /* 1 de septiembre de 2026 */
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -474,8 +487,12 @@ function pintarTabla(id, nombres, seccion, fnHoras){
     const celdas = ['<td class="nombre" title="' + n + '">' + cortoDe(n) + '</td>'];
     for (let d = 1; d <= dias; d++){
       const c = fila[d-1] || '';
-      celdas.push('<td class="celda' + ((new Date(ctx.a, ctx.m-1, d).getDay()===0 || new Date(ctx.a, ctx.m-1, d).getDay()===6) ? ' fin' : '') + '"><span class="cod ' + (c || 'vacio') +
-        '" data-n="' + n + '" data-d="' + d + '">' + (c || '·') + '</span></td>');
+      const w = new Date(ctx.a, ctx.m-1, d).getDay();
+      const horas = (HORAS_COD[seccion] || {})[c];
+      celdas.push('<td class="celda' + ((w===0 || w===6) ? ' fin' : '') + '" data-n="' + n + '" data-d="' + d + '">' +
+        '<span class="cod ' + (c || 'vacio') + '" data-n="' + n + '" data-d="' + d + '">' + (c || '·') + '</span>' +
+        (horas ? '<small class="hrs ' + c + '" title="' + fmt(horas) + ' h en este turno">' + fmt(horas) + '</small>' : '') +
+        '</td>');
     }
     let extra = '';
     if (seccion === 'urg'){
@@ -600,8 +617,10 @@ function abrirPaleta(cel){
   paleta.dataset.sec = sec;
 }
 document.addEventListener('click', e => {
-  const cel = e.target.closest('.cod');
-  if (cel && cel.dataset.n){ abrirPaleta(cel); return; }
+  /* sirve igual tocar el turno o el numero de horas que va debajo */
+  const cel = e.target.closest('.cod, .celda .hrs');
+  const td  = cel ? cel.closest('td.celda') : null;
+  if (td && td.dataset.n){ abrirPaleta(td); return; }
   if (!e.target.closest('#paleta')) paleta.style.display = 'none';
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') paleta.style.display = 'none'; });
