@@ -242,12 +242,16 @@ var SB_CUENTA = 'autorizacioneshospitalarias@hospitalsanjose.gov.co';   /* solo 
 <p class="nota">
    Turnos de 8 h. Entre semana todos hacen <strong>D</strong>. Los <strong>fines de semana y los festivos</strong> son turnos que cubren
    <strong>solo dos personas</strong>, en <strong>FD</strong> (8 h), por turnos: ese día no trabaja nadie más. YAMILETH (monitora) no hace
-   ni fines de semana ni festivos.
-   El reparto va solo y cumple tres reglas: quien cierra el último turno de un mes no abre el del mes siguiente,
-   nadie hace dos turnos seguidos (ni un fin de semana, ni un festivo), y el que llevó más FD en los meses anteriores va de
-   último para emparejar (la cuenta arranca en septiembre).
+   ni fines de semana ni festivos: nunca queda en FD, ni en un fin de semana ni en un lunes festivo.
+   Si el <strong>lunes que sigue al fin de semana es festivo</strong>, ese lunes lo hacen <strong>las mismas dos personas</strong> del
+   sábado y el domingo: es un solo turno de tres días (también cuando el fin de semana queda partido entre dos meses).
+   El reparto va solo y cumple cuatro reglas: quien cierra el último turno de un mes no abre el del mes siguiente,
+   nadie hace dos turnos seguidos (ni un fin de semana, ni un festivo), el que llevó más FD en los meses anteriores va de
+   último para emparejar (la cuenta arranca en septiembre), y el lunes festivo pegado al fin de semana lo hacen los mismos dos.
    La columna del festivo sale marcada en la cabecera.
-  </p>
+   El cuadro arranca en <strong>septiembre de 2026</strong> y sigue hacia adelante: los meses anteriores no se usan
+   (si se escribe uno, vuelve solo a septiembre de 2026).
+   </p>
 <div class="scroll"><table id="tablaHosp"><thead></thead><tbody></tbody></table></div>
 <p class="nota festivos" id="notaFestivos"></p>
 
@@ -259,7 +263,7 @@ var SB_CUENTA = 'autorizacioneshospitalarias@hospitalsanjose.gov.co';   /* solo 
 <div class="leyenda">
   <span><i class="mini cod D">D</i> día · 12 h</span>
   <span><i class="mini cod N">N</i> noche · 12 h</span>
-  <span><i class="mini cod FD">FD</i> fin de semana o festivo · hospitalización · 8 h · dos personas</span>
+  <span><i class="mini cod FD">FD</i> fin de semana o festivo · hospitalización · 8 h · dos personas · el lunes festivo va con el fin de semana</span>
   <span><i class="mini cod d">d</i> almuerzo · ½ h</span>
   <span><i class="mini cod n">n</i> disponible noche · 0 h</span>
   <span><i class="mini cod L">L</i> libre</span>
@@ -280,8 +284,9 @@ var SB_CUENTA = 'autorizacioneshospitalarias@hospitalsanjose.gov.co';   /* solo 
     </details>
 
 <p class="pie">
-  Haz clic en cualquier casilla para cambiar el turno. Se guarda solo en este navegador, o en Supabase cuando entras abajo.<br>
-  Las horas salen así: en urgencias 12 h por D, N y FD, 6 h por T y M, y ½ h por cada d; en hospitalización 8 h por D y por FD (los festivos también van en FD, con sus 8 h).<br>
+   Haz clic en cualquier casilla para cambiar el turno. Se guarda solo en este navegador, o en Supabase cuando entras abajo.<br>
+   El cuadro solo va desde septiembre de 2026 hacia adelante: los meses anteriores no se usan.<br>
+  Las horas salen así: en urgencias 12 h por D, N y FD, 6 h por T y M, y ½ h por cada d; en hospitalización 8 h por D y por FD (los festivos también van en FD, con sus 8 h, y si el lunes siguiente al fin de semana es festivo lo hacen las mismas dos personas del fin de semana).<br>
   Debajo de cada turno va el número de horas que vale: 12 h en urgencias (D y N) y 8 h en hospitalización (D y FD).
 </p>
 
@@ -383,10 +388,11 @@ const FEST_LUNES = [
   {f:'11-11', n:'Independencia de Cartagena'}
 ];
 /* Marca de versión del reparto de hospitalización. Los festivos también los
-   cubren dos personas (FD, 8 h) como los fines de semana. A los meses que se
-   guardaron con la regla vieja (los trabajaba todo el mundo) se les vuelve a
-   armar el cuadro una sola vez; después se respeta lo que se ajuste a mano. */
-const HOSP_MARCA = 3;
+   cubren dos personas (FD, 8 h) como los fines de semana, y si el lunes que
+   sigue al fin de semana es festivo lo hacen los mismos dos. A los meses que
+   se guardaron con una regla vieja se les vuelve a armar el cuadro una sola
+   vez; después se respeta lo que se ajuste a mano. */
+const HOSP_MARCA = 4;
 
 /* domingo de Pascua (algoritmo de Gauss/Meeus) */
 function pascua(a){
@@ -517,48 +523,83 @@ function generarAlmuerzos(a, m){
      2. Nadie hace dos turnos seguidos (ni un fin de semana, ni un festivo).
      3. El que llevó más FD en los meses anteriores hace menos después:
         en cada turno entran los que llevan menos FD acumulados.
+     4. Si el lunes que sigue al fin de semana es festivo, ese lunes lo hacen
+        LAS MISMAS DOS personas del sábado y el domingo: es un solo turno de
+        tres días. También cuando el fin de semana queda partido entre dos
+        meses (ahí el domingo y el lunes los hacen los dos que hicieron el
+        sábado del mes anterior).
    El punto de partida es septiembre de 2026, que ya está cuadrado.
    ---------------------------------------------------------------------------- */
 const FD_REF = {a:2026, m:9};     /* desde aquí se empiezan a contar los FD */
 const FD_POR_TURNO = 2;           /* dos personas cubren cada fin de semana y cada festivo */
 
+/* El cuadro arranca en Septiembre de 2026 y de ahí para adelante. Los meses
+   anteriores no se usan: no se arman, no se muestran y no se guardan. Si por lo
+   que sea llega un mes anterior (escrito a mano en la casilla, o guardado de una
+   versión vieja), se devuelve a septiembre de 2026. */
+const PISO = {a:2026, m:9};
+const antesDelPiso = (a, m) => (a < PISO.a) || (a === PISO.a && m < PISO.m);
+
 /* Los turnos de FD de un mes, en orden: cada fin de semana (sábado y domingo) y
    cada festivo entre semana. Un festivo que cae en sábado o domingo ya va dentro
-   del fin de semana, así que no se cuenta dos veces. */
+   del fin de semana, así que no se cuenta dos veces. Y si el lunes que sigue al
+   fin de semana es festivo, ese lunes entra en el mismo turno: lo hacen las
+   mismas dos personas (el turno queda de tres días). */
 function turnosDe(a, m){
-  const dias = diasDelMes(a, m), lista = [];
+  const dias = diasDelMes(a, m), lista = [], yaVa = {};
   for (let d = 1; d <= dias; d++){
     if (new Date(a, m-1, d).getDay() !== 6) continue;
-    lista.push({marca: d, finde: true, dias: (d + 1 <= dias) ? [d, d + 1] : [d]});
+    const ds = [d];
+    if (d + 1 <= dias) ds.push(d + 1);
+    if (d + 2 <= dias && esFestivo(a, m, d + 2)) ds.push(d + 2);   /* lunes festivo */
+    lista.push({marca: d, finde: true, dias: ds});
+    for (const x of ds) yaVa[x] = true;
   }
   for (let d = 1; d <= dias; d++){
     const w = new Date(a, m-1, d).getDay();
     if (w === 0 || w === 6 || !esFestivo(a, m, d)) continue;
+    if (yaVa[d]) continue;              /* es el lunes festivo, ya va con el fin de semana */
+    if (w === 1 && d <= 2) continue;    /* el fin de semana viene del mes anterior */
     lista.push({marca: d, finde: false, dias: [d]});
   }
   return lista.sort((x, y) => x.marca - y.marca);
 }
-/* quiénes cubrieron el último turno del mes (el último fin de semana o el último festivo) */
+/* quiénes cubrieron el último turno del mes (el último fin de semana o el último festivo).
+   La monitora nunca entra: no hace fines de semana ni festivos. */
 function ultimoTurnoDe(fila, a, m){
   const t = turnosDe(a, m);
   if (!t.length || !fila) return [];
   const u = t[t.length - 1];
-  return HOSP.filter(p => u.dias.some(d => (fila[p.nombre] || [])[d-1] === 'FD')).map(p => p.nombre);
+  return HOSP.filter(p => p.nombre !== MONITORA)
+             .filter(p => u.dias.some(d => (fila[p.nombre] || [])[d-1] === 'FD')).map(p => p.nombre);
 }
-/* quiénes hicieron FD el último día del mes (el sábado, para pasar el domingo al mes siguiente) */
+/* Quiénes hicieron FD el sábado del último fin de semana del mes, para pasar al mes
+   siguiente el fin de semana que queda partido: si el mes termina en sábado, el
+   domingo pasa al mes siguiente; si termina en domingo, el fin de semana entero ya
+   está en el mes, pero el lunes festivo que lo sigue también va con esos dos. */
 function ultimoDiaFD(fila, a, m){
   const dias = diasDelMes(a, m), f2 = fila || {};
-  /* Esto es para pasar el domingo al mes siguiente: solo tiene sentido si el mes
-     termina en sábado (el fin de semana que queda partido). Un festivo entre semana
-     que caiga en el último día NO arrastra nada al mes siguiente. */
-  if (new Date(a, m-1, dias).getDay() !== 6) return [];
-  return HOSP.filter(p => (f2[p.nombre] || [])[dias-1] === 'FD').map(p => p.nombre);
+  const w = new Date(a, m-1, dias).getDay();
+  const sab = (w === 6) ? dias : (w === 0) ? dias - 1 : 0;
+  if (!sab) return [];
+  /* la monitora queda por fuera: no hace fines de semana ni festivos */
+  return HOSP.filter(p => p.nombre !== MONITORA)
+             .filter(p => (f2[p.nombre] || [])[sab-1] === 'FD').map(p => p.nombre);
 }
 /* El cuadro de hospitalización de un mes: el que está guardado o, si no, el que
-   sale de estas mismas reglas. */
+   sale de estas mismas reglas.
+   OJO con septiembre de 2026: es el punto de partida (el que estaba en el Excel).
+   Antes, si se abría un mes de más adelante sin haber pasado por septiembre, la
+   cuenta arrancaba de un septiembre inventado por el programa y el reparto salía
+   distinto según por dónde entraras. Ahora, cuando septiembre no está guardado, la
+   base es siempre el mes semilla: así el cuadro sale igual se entre por donde se
+   entre. Si septiembre se guarda (porque se abrió o se ajustó a mano), manda lo
+   que esté guardado. */
 function filaHospDeMes(a, m){
   const k = claveMes(a, m);
-  return (estado[k] && estado[k].hosp) || generarHospitalizacion(a, m);
+  if (estado[k] && estado[k].hosp) return estado[k].hosp;
+  if (a === FD_REF.a && m === FD_REF.m) return JSON.parse(JSON.stringify(SEPTIEMBRE.hosp));
+  return generarHospitalizacion(a, m);
 }
 /* Cómo está la repartición al empezar el mes (a,m): cuántos FD lleva cada uno desde
    septiembre y quiénes cerraron el mes anterior. Si un mes no está guardado, se
@@ -578,12 +619,10 @@ function copiaFD(x){
 function contextoFD(a, m){
   const k = claveMes(a, m);
   const cero = () => { const c = {}; HOSP.forEach(p => c[p.nombre] = 0); return c; };
-  /* antes de septiembre de 2026 no hay cuenta: el cuadro arranca ahí */
-  if (a < FD_REF.a || (a === FD_REF.a && m < FD_REF.m)){
-    const vacio = {conteo: cero(), cierre: [], cierreDia: []};
-    cacheFD[k] = vacio;
-    return copiaFD(vacio);
-  }
+  /* El cuadro arranca en septiembre de 2026, así que aquí nunca llega un mes
+     anterior: la cuenta de FD empieza en cero en septiembre y de ahí en adelante
+     se va arrastrando lo que dejó el mes de antes. */
+  if (antesDelPiso(a, m)) return {conteo: cero(), cierre: [], cierreDia: []};
   if (cacheFD[k]) return copiaFD(cacheFD[k]);
   const conteo = cero();
   let cierre = [], cierreDia = [];
@@ -621,9 +660,17 @@ function generarHospitalizacion(a,m){
 
   const {conteo, cierre, cierreDia} = contextoFD(a, m);
 
-  /* si el día 1 cae domingo, ese día lo cubre quien hizo el sábado del mes anterior */
-  if (new Date(a, m-1, 1).getDay() === 0)
-    for (const n of cierreDia) res[n][0] = 'FD';
+  /* El fin de semana que viene del mes anterior: si el día 1 cae domingo, ese día lo
+     cubre quien hizo el sábado del mes anterior; y si el lunes que sigue es festivo,
+     ese lunes también lo hacen los mismos dos (un solo turno de tres días). */
+  const w1 = new Date(a, m-1, 1).getDay(), arrastre = [];
+  if (w1 === 0) arrastre.push(1);
+  if (w1 === 1 && esFestivo(a, m, 1)) arrastre.push(1);
+  if (w1 === 0 && dias >= 2 && esFestivo(a, m, 2)) arrastre.push(2);
+  for (const n of cierreDia){
+    for (const d of arrastre) res[n][d-1] = 'FD';
+    conteo[n] += arrastre.length;      /* esos días también cuentan como FD hechos */
+  }
 
   /* los turnos del mes (fines de semana y festivos): dos personas en cada uno,
      las que llevan menos FD y que no hayan hecho el turno anterior */
@@ -652,7 +699,18 @@ function generarHospitalizacion(a,m){
    ============================================================ */
 let ctx = null;
 
-function cargar(){ try{ estado = JSON.parse(localStorage.getItem(KEY)) || {}; }catch(e){ estado = {}; } olvidarFD(); }
+function cargar(){
+  try{ estado = JSON.parse(localStorage.getItem(KEY)) || {}; }catch(e){ estado = {}; }
+  /* El cuadro arranca en septiembre de 2026: al cargar se botan los meses
+     anteriores (y cualquier clave que no sea un mes de verdad). */
+  let botados = 0;
+  for (const k in estado){
+    const [a, m] = String(k).split('-').map(Number);
+    if (!(a >= 1900 && m >= 1 && m <= 12) || antesDelPiso(a, m)){ delete estado[k]; botados++; }
+  }
+  if (botados){ try{ localStorage.setItem(KEY, JSON.stringify(estado)); }catch(e){} }
+  olvidarFD();
+}
 function guardar(){ olvidarFD(); try{ localStorage.setItem(KEY, JSON.stringify(estado)); }catch(e){} }
 
 function ajustar(fila, dias){
@@ -667,6 +725,9 @@ function ajustar(fila, dias){
    punto de partida. Urgencias no se toca nunca. */
 function prepararMes(a, m){
   const clon = x => JSON.parse(JSON.stringify(x));
+  /* El cuadro solo va desde septiembre de 2026. Un mes anterior no se arma ni se
+     guarda: mesActual() ya se encarga de devolver la casilla a septiembre. */
+  if (antesDelPiso(a, m)) return;
   let ya = FD_REF.a, mm = FD_REF.m, cambio = false;
   while (ya < a || (ya === a && mm <= m)){
     const k = claveMes(ya, mm), g = estado[k], esSeptiembre = (ya === FD_REF.a && mm === FD_REF.m);
@@ -687,13 +748,47 @@ function prepararMes(a, m){
   /* el mes queda guardado enseguida, para que no se pierda si no se toca nada */
   if (cambio) guardar();
 }
+/* La monitora (Yamileth) no hace ni fines de semana ni festivos. El cuadro ya la
+   deja por fuera, pero si en un mes guardado (o traído de la nube) quedó un FD en
+   su fila, se borra al abrir el mes: así la regla no se cae por datos viejos.
+   Devuelve cuántos días se le quitaron, para avisarlo en el panel. */
+let monitoraCorregida = {};
+function borrarFDMonitora(k, a, m, dias){
+  const g = estado[k];
+  const fila = g && g.hosp && g.hosp[MONITORA];
+  if (!fila) return 0;
+  let quitados = 0;
+  for (let d = 1; d <= dias; d++){
+    if (fila[d-1] !== 'FD') continue;
+    /* Entre semana, cuando no es festivo, a la monitora le toca D como a todos;
+       si el día es fin de semana o festivo, le queda libre. */
+    const w = new Date(a, m-1, d).getDay();
+    fila[d-1] = (w !== 0 && w !== 6 && !esFestivo(a, m, d)) ? 'D' : '';
+    quitados++;
+  }
+  if (quitados) monitoraCorregida[k] = quitados;
+  return quitados;
+}
+
 function mesActual(){
-  const {a, m} = leerMes($('#mes').value);
+  let {a, m} = leerMes($('#mes').value);
+  /* si la casilla del mes quedara vacía o con algo raro, se muestra el mes de hoy */
+  if (!(a >= 1900 && m >= 1 && m <= 12)){
+    const h = new Date();
+    a = h.getFullYear(); m = h.getMonth() + 1;
+  }
+  /* El cuadro solo va desde septiembre de 2026: un mes anterior (escrito a mano o
+     guardado de una versión vieja) se devuelve a septiembre de 2026. */
+  if (antesDelPiso(a, m)){ a = PISO.a; m = PISO.m; }
+  if ($('#mes') && $('#mes').value !== claveMes(a, m)) $('#mes').value = claveMes(a, m);
   const k = claveMes(a, m), dias = diasDelMes(a, m);
   olvidarFD();
   prepararMes(a, m);
-  for (const sec of ['urg','hosp'])
-    for (const n in estado[k][sec]) estado[k][sec][n] = ajustar(estado[k][sec][n], dias);
+  for (const sec of ['urg','hosp']){
+    const filas = (estado[k] && estado[k][sec]) || {};
+    for (const n in filas) filas[n] = ajustar(filas[n], dias);
+  }
+  if (borrarFDMonitora(k, a, m, dias)) guardar();
   return {a, m, k, dias};
 }
 
@@ -809,11 +904,16 @@ function pintarFestivos(){
   const lista = [];
   for (let d = 1; d <= dias; d++){
     const n = festivoDe(a, m, d);
-    if (n) lista.push('<strong>' + d + '</strong> (' + DIAS[new Date(a, m-1, d).getDay()] + ') ' + n);
+    if (!n) continue;
+    const w = new Date(a, m-1, d).getDay();
+    /* si el festivo cae en lunes, va con el fin de semana que acaba de pasar */
+    const cola = (w === 1) ? ' <em>(va con el fin de semana, los mismos dos)</em>'
+               : (w === 0 || w === 6) ? ' <em>(dentro del fin de semana)</em>' : '';
+    lista.push('<strong>' + d + '</strong> (' + DIAS[w] + ') ' + n + cola);
   }
   el.innerHTML = lista.length
     ? 'Festivos de ' + MESES[m-1] + ': ' + lista.join(' · ') +
-      '. Esos días también trabajan <strong>dos personas</strong>: van en <strong>FD</strong>, con 8 h debajo.'
+      '. Esos días también trabajan <strong>dos personas</strong>: van en <strong>FD</strong>, con 8 h debajo. Y si el festivo es el lunes que sigue al fin de semana, lo hacen <strong>las mismas dos personas</strong> del sábado y el domingo.'
     : 'En ' + MESES[m-1] + ' no hay festivos: los turnos de hospitalización salen como siempre (D entre semana, FD los fines de semana de a dos).';
 }
 
@@ -840,12 +940,25 @@ function pintarAvisos(){
 
   /* 3. turnos de hospitalización (fines de semana y festivos): los cubren dos */
   const turnos = turnosDe(a, m);
+  /* cubre el turno quien está en FD TODOS los días del turno: con el lunes festivo
+     pegado al fin de semana, el turno es de tres días y tienen que ser los mismos dos */
   const cubrenTurno = t => HOSP.filter(p => t.dias.some(d => (hosp[p.nombre] || [])[d-1] === 'FD')).map(p => p.nombre);
   for (const t of turnos){
+    const eti = t.finde ? 'fin de semana del ' + t.marca : 'festivo del ' + t.marca;
     const n = cubrenTurno(t).filter(x => x !== MONITORA).length;
     if (n !== 2)
-      lista.push('Hospitalización, ' + (t.finde ? 'fin de semana del ' + t.marca : 'festivo del ' + t.marca) +
-                 ': lo cubren ' + n + ' persona' + (n === 1 ? '' : 's') + ' (deberían ser 2)');
+      lista.push('Hospitalización, ' + eti + ': lo cubren ' + n + ' persona' + (n === 1 ? '' : 's') + ' (deberían ser 2)');
+    /* En un turno de tres días (el lunes festivo pegado al fin de semana) los dos tienen
+       que estar los tres días: aquí se avisa de quien haga solo una parte del turno. */
+    if (t.dias.length > 2)
+      for (const p of HOSP){
+        if (p.nombre === MONITORA) continue;
+        const f = hosp[p.nombre] || [];
+        const hechos = t.dias.filter(d => f[d-1] === 'FD').length;
+        if (hechos && hechos !== t.dias.length)
+          lista.push(cortoDe(p.nombre) + ': hizo ' + hechos + ' de los ' + t.dias.length + ' días del ' + eti +
+                     ' (días ' + t.dias.join(', ') + '), y el turno lo hacen los mismos dos todos los días');
+      }
   }
 
   /* 4. hospitalización: nadie hace dos turnos seguidos (ni fin de semana ni festivo) */
@@ -867,6 +980,41 @@ function pintarAvisos(){
                    MESES[m-1] + ' (no puede repetir)');
   }
 
+  /* 3b. el fin de semana que viene del mes pasado (el domingo y, si es festivo, el lunes)
+     lo cubren los mismos dos que hicieron el sábado de ese fin de semana */
+  const arrastre = [];
+  if (new Date(a, m-1, 1).getDay() === 0 || (new Date(a, m-1, 1).getDay() === 1 && esFestivo(a, m, 1))) arrastre.push(1);
+  if (new Date(a, m-1, 1).getDay() === 0 && dias >= 2 && esFestivo(a, m, 2)) arrastre.push(2);
+  if (arrastre.length){
+    const etiqueta = 'Hospitalización, el fin de semana que viene del mes pasado (día ' + arrastre.join(' y ') + ')';
+    const cubren = HOSP.filter(p => p.nombre !== MONITORA && arrastre.some(d => (hosp[p.nombre] || [])[d-1] === 'FD')).map(p => p.nombre);
+    if (cubren.length !== 2)
+      lista.push(etiqueta + ': lo cubren ' + cubren.length + ' persona' + (cubren.length === 1 ? '' : 's') + ' (deberían ser 2)');
+    else
+      for (const n of cubren){
+        if (ctxFD.cierre.indexOf(n) < 0)
+          lista.push(cortoDe(n) + ': quedó en el fin de semana que viene del mes pasado y no fue de los dos que lo hicieron allá (deben ser los mismos)');
+        if (arrastre.some(d => (hosp[n] || [])[d-1] !== 'FD'))
+          lista.push(cortoDe(n) + ': solo hizo una parte del fin de semana que viene del mes pasado (días ' + arrastre.join(', ') + '), y lo hacen los mismos dos todo el fin de semana');
+      }
+    const enD = HOSP.filter(p => arrastre.some(d => (hosp[p.nombre] || [])[d-1] === 'D')).map(p => p.corto);
+    if (enD.length)
+      lista.push(etiqueta + ': ' + enD.join(', ') + (enD.length === 1 ? ' está' : ' están') + ' en D, y ese día va en FD con los mismos dos del fin de semana');
+  }
+  /* 3c. la monitora no hace ni fines de semana ni festivos */
+  const fdMonitora = (hosp[MONITORA] || []).filter(c => c === 'FD').length;
+  if (fdMonitora)
+    lista.push('Yamileth Bermúdez (monitora): tiene ' + fdMonitora + ' día' + (fdMonitora === 1 ? '' : 's') +
+               ' en FD, y la monitora no hace ni fines de semana ni festivos');
+  /* si al abrir el mes se le quitó algún FD que venía guardado, queda anotado */
+  const quitadosMon = monitoraCorregida[ctx.k] || 0;
+  const notaMonitora = quitadosMon
+    ? '<li>Yamileth Bermúdez (monitora): venía con ' + quitadosMon + ' día' + (quitadosMon === 1 ? '' : 's') +
+      ' en FD guardado' + (quitadosMon === 1 ? '' : 's') +
+      (quitadosMon === 1 ? ' y se le quitó' : ' y se le quitaron') +
+      '. La monitora no hace ni fines de semana ni festivos.</li>'
+    : '';
+
   /* 5. hospitalización: un festivo entre semana no puede quedar con gente en D */
   for (let d = 1; d <= dias; d++){
     const w = new Date(a, m-1, d).getDay();
@@ -882,11 +1030,11 @@ function pintarAvisos(){
   const caja = $('#avisos');
   if (!lista.length){
     caja.className = 'avisos ok';
-    caja.innerHTML = '<h3>Todo cuadra</h3><ul><li>Hay cobertura de día y de noche todos los días, no hay noches pegadas a un día, y los fines de semana y los festivos los cubren dos personas en FD.</li></ul>';
+    caja.innerHTML = '<h3>Todo cuadra</h3><ul><li>Hay cobertura de día y de noche todos los días, no hay noches pegadas a un día, y los fines de semana y los festivos los cubren dos personas en FD (el lunes festivo que sigue al fin de semana lo hacen los mismos dos).</li>' + notaMonitora + '</ul>';
   } else {
     caja.className = 'avisos';
     caja.innerHTML = '<h3>' + lista.length + ' cosa' + (lista.length === 1 ? '' : 's') + ' por revisar</h3><ul>' +
-      lista.slice(0, 60).map(x => '<li>' + x + '</li>').join('') + '</ul>' +
+      lista.slice(0, 60).map(x => '<li>' + x + '</li>').join('') + notaMonitora + '</ul>' +
       (lista.length > 60 ? '<p class="nota" style="margin:8px 0 0">… y ' + (lista.length-60) + ' más.</p>' : '');
   }
 }
@@ -1292,7 +1440,7 @@ function descargarExcel(){
     leyenda: [
       { codigo: 'D',  texto: 'día · 12 h' },
       { codigo: 'N',  texto: 'noche · 12 h' },
-      { codigo: 'FD', texto: 'fin de semana o festivo · 8 h · dos personas' },
+      { codigo: 'FD', texto: 'fin de semana o festivo · 8 h · dos personas (el lunes festivo va con el fin de semana)' },
       { codigo: 'd',  texto: 'almuerzo · ½ h' },
       { codigo: 'L',  texto: 'libre' },
       { codigo: 'l',  texto: 'disponible día' },
