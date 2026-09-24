@@ -1472,7 +1472,7 @@ function pintarAvisos(){
   if (angyeSoloSemana(a, m)){
     const fdAngye = (hosp[ANGYE] || []).filter(c => c === 'FD').length;
     if (fdAngye)
-      lista.push('Angye Cristina Bolaños Diaz: tiene ' + fdAngye + ' día' + (fdAngye === 1 ? '' : 's') + ' en FD, y en ' +
+      lista.push('Angye C. Bolaños: tiene ' + fdAngye + ' día' + (fdAngye === 1 ? '' : 's') + ' en FD, y en ' +
                  MESES[m-1] + ' solo hace de lunes a viernes (no hace fines de semana ni festivos)');
   }
   const quitadosAng = angyeCorregida[ctx.k] || 0;
