@@ -251,30 +251,18 @@ var SB_CUENTA = 'autorizacioneshospitalarias@hospitalsanjose.gov.co';   /* solo 
     de lunes a viernes y también los fines de semana y los festivos.
     Si el <strong>lunes que sigue al fin de semana es festivo</strong>, ese lunes lo hacen <strong>las mismas dos personas</strong> del
     sábado y el domingo: es un solo turno de tres días (también cuando el fin de semana queda partido entre dos meses).
-    El reparto va solo: quien cierra el último turno de un mes no abre el del mes siguiente, el que llevó más FD en los
-    meses anteriores va de último para emparejar (la cuenta arranca en octubre de 2026), el lunes festivo pegado al fin de
-    semana lo hacen los mismos dos, desde <strong>octubre de 2026</strong> quien hace el turno de tres días (sábado, domingo
-    y lunes festivo) no vuelve a hacer otro turno de tres días —ni en ese mes ni en el siguiente—, y desde
-    <strong>octubre de 2026</strong> todos quedan con los mismos días de FD del
+    El reparto va solo y cumple seis reglas: quien cierra el último turno de un mes no abre el del mes siguiente,
+    nadie hace dos turnos seguidos (ni un fin de semana, ni un festivo), el que llevó más FD en los meses anteriores va de
+    último para emparejar (la cuenta arranca en septiembre), el lunes festivo pegado al fin de semana lo hacen los mismos dos,
+    desde <strong>octubre de 2026</strong> quien hace el turno de tres días (sábado, domingo y lunes festivo) no vuelve a
+    hacer otro turno de tres días —ni en ese mes ni en el siguiente— ni termina el mes con un fin de semana
+    (así, en octubre de 2026, quien hizo el 10, el 11 y el 12 no cierra el mes con el 31, el 1 y el 2, ni repite el
+    fin de semana con festivo en noviembre; y el que hizo el 31 de octubre, el 1 y el 2 de noviembre no termina el
+     fin de semana de noviembre), y desde <strong>octubre de 2026</strong> todos quedan con los mismos días de FD del
      mes —o con uno más, uno menos—: en cada turno entran primero los que menos días llevan ese mes y, si hace falta,
      en un fin de semana de dos días entra una tercera persona (la cuenta va por días, que un fin de semana vale 2 y un
      turno de tres días vale 3).
-   Una sola regla es <strong>flexible</strong>: <strong>nadie hace dos turnos seguidos</strong> (ni un fin de semana, ni
-   un festivo). Se respeta siempre que se pueda y solo se suelta cuando es lo único que impide que todos queden con los
-   mismos días del mes. Lo del <strong>turno de tres días no se suelta nunca</strong> (desde octubre de 2026): quien lo
-   hace <strong>no cierra el mes</strong> —el que cierra el último fin de semana del mes, cuando el lunes es festivo, se
-   lleva el turno de tres días del mes que empieza, porque el sábado queda en un mes y el domingo y el lunes festivo en
-   el otro, o sea que estaría repitiendo dos meses seguidos—, <strong>no lo repite al mes siguiente</strong> y, si el
-   último fin de semana del mes tiene lunes festivo, <strong>lo hace completo: los mismos dos el sábado, el domingo y el
-   lunes</strong>. Cuando con esas reglas no alcanza para dejar a todos con los mismos días, el mes queda con la
-   diferencia más pequeña posible: en <strong>octubre de 2026</strong> los cinco no pueden quedar con 4 días —el que
-   hace el 10, el 11 y el 12 solo puede terminar con 3 o con 5, porque los turnos van de a dos días, y el que hace el 31
-   no puede ser el mismo— y quedan 5, 5, 5, 5 y 4.
     La columna del festivo sale marcada en la cabecera.
-   La cuenta de los FD arranca en <strong>octubre de 2026</strong>: septiembre queda solo de recuerdo
-   (tal como estaba en el Excel) y <strong>no se tiene en cuenta para armar octubre</strong> —nadie queda
-   vetado por lo que hizo en septiembre, ni por quién cerró septiembre—. De <strong>octubre en adelante</strong>
-   sí se mira el mes anterior: para armar noviembre se tiene en cuenta octubre, y así hacia adelante.
    El cuadro arranca en <strong>septiembre de 2026</strong> y sigue hacia adelante: los meses anteriores no se usan
    (si se escribe uno, vuelve solo a septiembre de 2026).
    </p>
@@ -457,30 +445,8 @@ const FEST_LUNES = [
    fin de semana que cierra el mes siguen entrando dos.
    Marca 8: la cuenta para emparejar el mes va por DÍAS de FD y no por turnos (un fin
    de semana vale 2 días y un turno de tres días vale 3), que es como se revisa el
-   cuadro: todos quedan con los mismos días de FD del mes, o con uno más, uno menos.
-   Marca 9: el reparto de los FD se cuenta desde OCTUBRE de 2026. Septiembre queda
-   tal como estaba en el Excel (solo de recuerdo) y NO cuenta para armar octubre:
-   no se arrastran días de FD de septiembre ni queda vetado quien cerró septiembre.
-   Octubre se arma desde cero y de ahí en adelante cada mes sí mira el mes anterior
-   (para armar noviembre se tiene en cuenta octubre).
-   Marca 10: dos reglas quedaron flexibles, SOLO para cuando son lo único que impide
-   que todos queden con los mismos días de FD del mes: (1) el que hace el turno de
-   tres días (sábado, domingo y lunes festivo) también puede cerrar el mes y (2)
-   alguien puede hacer dos turnos seguidos. Se prueban al final: primero se intenta
-   emparejar el mes con las reglas completas y, si con ellas no se puede, se sueltan.
-   Marca 11: de las dos reglas flexibles queda SOLO una. El que hace el turno de tres
-   días ya NO puede cerrar el mes, nunca: el que cierra el mes con el último fin de
-   semana, cuando el lunes es festivo, se lleva el fin de semana con lunes festivo del
-   mes siguiente (el turno de tres días queda partido: sábado en un mes, domingo y
-   lunes festivo en el que empieza), así que repetiría dos meses seguidos. Por lo
-   mismo, el que hace el turno de tres días tampoco lo repite al mes siguiente, y el
-   que cierra el último fin de semana del mes lo hace completo: los mismos dos el
-   sábado, el domingo y, si es festivo, el lunes. Lo único que se suelta —y de último—
-   es que alguien haga dos turnos seguidos. Con eso, octubre de 2026 ya no puede
-   quedar 4, 4, 4, 4 y 4 (el que hace el 10, el 11 y el 12 solo puede terminar con 3 o
-   con 5 días, porque los turnos van de a dos días) y queda 5, 5, 5, 5 y 4, que es lo
-   más parejo posible. */
-const HOSP_MARCA = 11;
+   cuadro: todos quedan con los mismos días de FD del mes, o con uno más, uno menos. */
+const HOSP_MARCA = 8;
 
 /* domingo de Pascua (algoritmo de Gauss/Meeus) */
 function pascua(a){
@@ -608,9 +574,7 @@ function generarAlmuerzos(a, m){
    de semana y los festivos: los dos son iguales, de a dos personas.
    Reglas que pidió el hospital (valen todos los meses):
      1. Quien cubre el último turno de un mes no abre el del mes siguiente.
-      2. Nadie hace dos turnos seguidos (ni un fin de semana, ni un festivo).
-         (FLEXIBLE desde la marca 10: se suelta de último, y solo si es lo único
-         que impide que todos queden con los mismos días de FD del mes.)
+     2. Nadie hace dos turnos seguidos (ni un fin de semana, ni un festivo).
      3. El que llevó más FD en los meses anteriores hace menos después:
         en cada turno entran los que llevan menos FD acumulados.
       4. Si el lunes que sigue al fin de semana es festivo, ese lunes lo hacen
@@ -618,34 +582,21 @@ function generarAlmuerzos(a, m){
          tres días. También cuando el fin de semana queda partido entre dos
          meses (ahí el domingo y el lunes los hacen los dos que hicieron el
          sábado del mes anterior).
-      5. Turno de tres días, desde octubre de 2026: el que hace sábado, domingo
-         y lunes festivo no vuelve a hacer otro turno de tres días —ni en ese
-         mes ni en el siguiente— ni termina el mes con un fin de semana.
-         (Desde la marca 11 esto NUNCA se suelta, ni para emparejar el mes: el que
-         cierra el mes con el último fin de semana, cuando el lunes es festivo, se
-         lleva el turno de tres días del mes que empieza —el sábado queda en un mes
-         y el domingo y el lunes festivo en el otro—, o sea que estaría repitiendo
-         dos meses seguidos. Por eso, además, el último fin de semana del mes con
-         lunes festivo lo hacen completo los mismos dos: sábado, domingo y lunes.)
+     5. Turno de tres días, desde octubre de 2026: el que hace sábado, domingo
+        y lunes festivo no vuelve a hacer otro turno de tres días —ni en ese
+        mes ni en el siguiente— ni termina el mes con un fin de semana.
      6. Igualar los días del mes, desde octubre de 2026: todos tienen que
         quedar con los mismos DÍAS de FD (o lo más parecido posible: uno más,
         uno menos); la cuenta va por días porque un fin de semana vale 2 y un
         turno de tres días vale 3. En cada turno entran primero los que menos
         días llevan ese mes y, entre los que van igualados, los que menos FD
-        llevan desde octubre de 2026. Si hace falta, en un fin de semana de dos días
+        llevan desde septiembre. Si hace falta, en un fin de semana de dos días
         (sábado y domingo) entra una TERCERA persona. Nunca entran tres en el
         turno de tres días (sábado, domingo y lunes festivo), ni en un festivo
         entre semana, ni en el fin de semana que cierra el mes.
-    El punto de partida es octubre de 2026: septiembre no cuenta (marca 9).
-    ---------------------------------------------------------------------------- */
-const FD_REF = {a:2026, m:9};     /* septiembre: el mes del Excel; queda tal cual, de recuerdo */
-/* La cuenta de los FD arranca en OCTUBRE de 2026 (marca 9): septiembre NO cuenta
-   para armar octubre y a octubre se entra con la cuenta en cero (nadie queda
-   vetado por lo que hizo en septiembre, ni por quién cerró septiembre). De octubre
-   en adelante sí se mira el mes anterior: para armar noviembre se tiene en cuenta
-   octubre, y así en adelante. */
-const FD_BASE = {a:2026, m:10};   /* desde aquí se empiezan a contar los FD */
-const antesDeBase = (a, m) => (a < FD_BASE.a) || (a === FD_BASE.a && m < FD_BASE.m);
+   El punto de partida es septiembre de 2026, que ya está cuadrado.
+   ---------------------------------------------------------------------------- */
+const FD_REF = {a:2026, m:9};     /* desde aquí se empiezan a contar los FD */
 const FD_POR_TURNO = 2;           /* dos personas cubren cada fin de semana y cada festivo */
 const FD_TOPE_FINDE = 3;          /* en un fin de semana de dos días (sábado y domingo) puede
                                      entrar una tercera persona, para emparejar los turnos
@@ -725,10 +676,13 @@ function trioDeMes(fila, a, m){
 }
 /* El cuadro de hospitalización de un mes: el que está guardado o, si no, el que
    sale de estas mismas reglas.
-   OJO con septiembre de 2026: es el mes del Excel y solo sirve para septiembre
-   mismo; la cuenta de los FD no arranca ahí sino en octubre (FD_BASE). Los meses
-   de octubre en adelante se arman con estas reglas y, si el mes está guardado
-   (porque se abrió o se ajustó a mano), manda lo que esté guardado. */
+   OJO con septiembre de 2026: es el punto de partida (el que estaba en el Excel).
+   Antes, si se abría un mes de más adelante sin haber pasado por septiembre, la
+   cuenta arrancaba de un septiembre inventado por el programa y el reparto salía
+   distinto según por dónde entraras. Ahora, cuando septiembre no está guardado, la
+   base es siempre el mes semilla: así el cuadro sale igual se entre por donde se
+   entre. Si septiembre se guarda (porque se abrió o se ajustó a mano), manda lo
+   que esté guardado. */
 function filaHospDeMes(a, m){
   const k = claveMes(a, m);
   if (estado[k] && estado[k].hosp) return estado[k].hosp;
@@ -754,40 +708,28 @@ function copiaFD(x){
 function contextoFD(a, m){
   const k = claveMes(a, m);
   const cero = () => { const c = {}; HOSP.forEach(p => c[p.nombre] = 0); return c; };
-  /* La cuenta de los FD arranca en octubre de 2026: septiembre (y antes) no cuenta
-     para nada y a octubre se entra con la cuenta en cero, sin mirar lo que pasó en
-     septiembre. De octubre en adelante se arrastra lo que dejó el mes anterior. */
-  if (antesDelPiso(a, m) || antesDeBase(a, m) || (a === FD_BASE.a && m === FD_BASE.m))
-    return {conteo: cero(), cierre: [], cierreDia: [], trioAntes: []};
+  /* El cuadro arranca en septiembre de 2026, así que aquí nunca llega un mes
+     anterior: la cuenta de FD empieza en cero en septiembre y de ahí en adelante
+     se va arrastrando lo que dejó el mes de antes. */
+  if (antesDelPiso(a, m)) return {conteo: cero(), cierre: [], cierreDia: [], trioAntes: []};
   if (cacheFD[k]) return copiaFD(cacheFD[k]);
   const conteo = cero();
-  /* se arranca de lo que dejó el mes anterior */
-  const ant  = mesAntes(a, m);
-  const prev = contextoFD(ant.a, ant.m);
-  for (const p of HOSP) conteo[p.nombre] = prev.conteo[p.nombre] || 0;
-  /* la cuenta para emparejar son los días de FD que llevó cada uno: los fines
-     de semana y los festivos valen lo mismo (8 h cada día). */
-  const fila = filaHospDeMes(ant.a, ant.m);
-  for (const p of HOSP) conteo[p.nombre] += (fila[p.nombre] || [])
-    .filter(c => c === 'FD').length;
-  /* quiénes cerraron el mes anterior (el último turno y el fin de semana partido)
-     y quiénes hicieron el turno de tres días: se saca de la fila que ya se tiene
-     aquí, para no volver a armar el mes. */
-  const cierre    = ultimoTurnoDe(fila, ant.a, ant.m);
-  const cierreDia = ultimoDiaFD(fila, ant.a, ant.m);
-  const trioAntes = trioDeMes(fila, ant.a, ant.m);
-  /* El fin de semana con lunes festivo que arrancó el mes de atrás y terminó en el
-     mes anterior (el sábado quedó en un mes y el domingo y el lunes festivo en el
-     otro) también es un turno de tres días DEL MES ANTERIOR: esos dos tampoco lo
-     pueden repetir en este mes. Sin esto, el turno que cruza el mes quedaba sin
-     vetar al mes siguiente (el cuadro no lo veía, porque el sábado no está en el
-     mes anterior). */
-  const diasAnt = diasDelMes(ant.a, ant.m), w1ant = new Date(ant.a, ant.m-1, 1).getDay();
-  const diasTrioAnt = (w1ant === 1 && festivoDe(ant.a, ant.m, 1)) ? [1]
-                    : (w1ant === 0 && diasAnt >= 2 && festivoDe(ant.a, ant.m, 2)) ? [1, 2] : [];
-  for (const p of HOSP){
-    if (p.nombre === MONITORA || trioAntes.indexOf(p.nombre) >= 0) continue;
-    if (diasTrioAnt.some(d => (fila[p.nombre] || [])[d-1] === 'FD')) trioAntes.push(p.nombre);
+  let cierre = [], cierreDia = [], trioAntes = [];
+  if (a !== FD_REF.a || m !== FD_REF.m){
+    /* se arranca de lo que dejó el mes anterior */
+    const ant  = mesAntes(a, m);
+    const prev = contextoFD(ant.a, ant.m);
+    for (const p of HOSP) conteo[p.nombre] = prev.conteo[p.nombre] || 0;
+    /* la cuenta para emparejar son los días de FD que llevó cada uno: los fines
+       de semana y los festivos valen lo mismo (8 h cada día). */
+    const fila = filaHospDeMes(ant.a, ant.m);
+    for (const p of HOSP) conteo[p.nombre] += (fila[p.nombre] || [])
+      .filter(c => c === 'FD').length;
+    cierre    = ultimoTurnoDe(fila, ant.a, ant.m);
+    cierreDia = ultimoDiaFD(fila, ant.a, ant.m);
+    /* los del turno de tres días del mes pasado: no repiten turno de tres días en
+       este. Se saca de la fila que ya se tiene aquí, para no volver a armar el mes. */
+    trioAntes = trioDeMes(fila, ant.a, ant.m);
   }
   const res = {conteo: conteo, cierre: cierre, cierreDia: cierreDia, trioAntes: trioAntes};
   cacheFD[k] = res;
@@ -829,7 +771,7 @@ function generarHospitalizacion(a,m){
      las que llevan menos DÍAS de FD ese mes y que no hayan hecho el turno anterior.
      Desde octubre de 2026 manda primero cuántos días de FD lleva cada uno ese mes,
      para que todos queden con los mismos días; entre los que van igualados entran
-     los que llevan menos días de FD desde octubre de 2026. La cuenta va por días porque
+     los que llevan menos días de FD desde septiembre. La cuenta va por días porque
      los turnos no valen lo mismo: un fin de semana de dos días vale 2 días y un
      turno de tres días (sábado, domingo y lunes festivo) vale 3. */
   const igualar = desdeTrio(a, m);
@@ -893,16 +835,11 @@ function generarHospitalizacion(a,m){
     ? filtrado
     : filtrado.concat(todos.filter(x => filtrado.indexOf(x) < 0));
   /* Al turno que viene, si es un turno de tres días o el último fin de semana
-     del mes, se le reservan los que lo pueden hacer: no se gastan ahora.
-     OJO: si el turno de ahora también es un turno de tres días, no se le reserva
-     nada al que viene —los dos piden la misma gente y, si se le quita al de ahora,
-     el turno de tres días le queda a quien no puede hacerlo (pasa cuando hay dos
-     fines de semana con lunes festivo pegados, como en julio de 2028)—. */
-  const reservar = (elegibles, actual, siguiente) => {
+     del mes, se le reservan los que lo pueden hacer: no se gastan ahora. */
+  const reservar = (elegibles, siguiente) => {
     if (!valeTrio || !siguiente) return elegibles;
     const esTres = siguiente.dias.length > 2, esCierre = (siguiente === ultimoFinde);
     if (!esTres && !esCierre) return elegibles;
-    if (esTres && actual.dias.length > 2) return elegibles;
     const pool  = (esTres ? sinTrio(orden) : sinCierre(orden)).map(x => x.nombre);
     const otros = elegibles.filter(x => pool.indexOf(x.nombre) < 0);
     return (pool.length <= FD_POR_TURNO && otros.length >= FD_POR_TURNO) ? otros : elegibles;
@@ -916,7 +853,7 @@ function generarHospitalizacion(a,m){
     /* nadie hace dos turnos seguidos */
     let elegibles = menosFD(orden, previos);
     /* no se gastan en este turno los que hacen falta para el que viene */
-    elegibles = reservar(elegibles, t, turnos[j+1]);
+    elegibles = reservar(elegibles, turnos[j+1]);
     /* en un turno de tres días no entran los que ya llevan un turno de tres días */
     if (valeTrio && esTrio) elegibles = preferir(sinTrio(elegibles), elegibles);
     /* y en el último fin de semana del mes no cierran los del turno de tres días
@@ -1036,14 +973,11 @@ function generarHospitalizacion(a,m){
      persona, después con dos...: gana el reparto en el que TODOS quedan con los mismos
      días de FD del mes (o con uno más, uno menos) con la menos gente extra posible. Si
      la búsqueda no encuentra uno mejor que el de arriba, se queda el de arriba. */
-  const repartoParejo = (piso, techo, kMax, permiteSeguidos) => {
-    /* Tope de intentos de este reparto, para que el cuadro no se demore. Cada forma
-       de emparejar lleva su propio tope: si una no da, no le quita el turno a la
-       siguiente (que es la que suelta alguna regla para poder emparejar el mes). */
-    let nodos = 0;
+  let nodos = 0;                     /* tope de intentos del mes, para que el cuadro no se demore */
+  const repartoParejo = (piso, techo, kMax) => {
     const nombres = orden.map(x => x.nombre);
     const puesto = {}; for (const x of orden) puesto[x.nombre] = x.i;
-    /* los que llevan menos FD desde octubre de 2026 van primero: así la búsqueda prueba
+    /* los que llevan menos FD desde septiembre van primero: así la búsqueda prueba
        primero lo que probaría el resto del reparto */
     const porFD = nombres.slice().sort((x, y) => (conteo[x] - conteo[y]) || (puesto[x] - puesto[y]));
     const cuentas = {}, vetoDia = {}, puestos2 = new Array(turnos.length).fill(null);
@@ -1052,18 +986,11 @@ function generarHospitalizacion(a,m){
     /* días de FD que todavía se pueden repartir de aquí en adelante */
     const cola = new Array(turnos.length + 1).fill(0);
     for (let j = turnos.length - 1; j >= 0; j--) cola[j] = cola[j + 1] + turnos[j].dias.length;
-    /* ¿puede entrar esta persona en este turno?
-       Una sola regla se puede soltar, y solo cuando es lo único que impide que todos
-       queden con los mismos días de FD del mes: 'permiteSeguidos' deja que alguien
-       haga dos turnos seguidos (marca 10). Lo que NO se suelta nunca (marca 11):
-       que el del turno de tres días cierre el mes —quien cierra el mes con el último
-       fin de semana, cuando el lunes es festivo, se lleva un fin de semana con lunes
-       festivo al mes siguiente, o sea que repetiría—, que abra el mes el que lo
-       cerró, ni que se repita el turno de tres días. */
+    /* ¿puede entrar esta persona en este turno? */
     const puede = (j, n) => {
       const t = turnos[j];
       if (j === 0 && cierre.indexOf(n) >= 0) return false;          /* no abre el que cerró */
-      if (!permiteSeguidos && j > 0 && puestos2[j-1].indexOf(n) >= 0) return false;  /* no dos turnos seguidos */
+      if (j > 0 && puestos2[j-1].indexOf(n) >= 0) return false;     /* no dos turnos seguidos */
       if (valeTrio){
         if (t.dias.length > 2 && (vetadosFijos.indexOf(n) >= 0 || vetoDia[n])) return false;
         if (t === ultimoFinde && t.dias.length <= 2 && (cierreTrio.indexOf(n) >= 0 || vetoDia[n])) return false;
@@ -1145,38 +1072,12 @@ function generarHospitalizacion(a,m){
     let parejo = null;
     /* si ya quedó todo parejo y sin gente extra, no hay nada que buscar */
     const cerrado = (dif === 0 && extras(puestos) === 0);
-    /* Primero sin gente extra, que es la única forma de que TODOS queden con los
-       mismos días exactos; si no alcanza, con una tercera persona, con dos...
-       En cada intento se prueban primero las reglas completas y, solo si con ellas
-       es imposible emparejar el mes, se suelta la única regla flexible (marcas 10 y
-       11): que alguien haga dos turnos seguidos. Lo del turno de tres días —quien lo
-       hace no cierra el mes ni repite el mes siguiente— no se suelta.
-       Marca 11: el turno de tres días ya no se suelta, así que el mes que no se pueda
-       emparejar con las reglas completas queda con la diferencia más pequeña posible.
-       Ejemplo: en octubre de 2026 los cinco no pueden quedar con 4 días —el que hace
-       el 10, el 11 y el 12 solo puede terminar con 3 o con 5, porque los turnos van de
-       a dos días, y el que hace el 31 no puede ser el mismo—; lo más parejo es
-       5, 5, 5, 5 y 4. */
-    const repartoDe = (k, piso, techo, soltar) => {
-      const r = repartoParejo(piso, techo, k, false);
-      if (r || !soltar) return r;
-      return repartoParejo(piso, techo, k, true);
-    };
-    const buscarParejo = soltar => {
-      for (let k = 0; k <= Math.min(findesSueltos, 4) && !parejo; k++){
-        let total = FD_POR_TURNO * sumaDias + 2 * k;   /* los días de FD que hay que repartir */
-        for (const n in diasMesIni) total += diasMesIni[n];
-        const piso = Math.floor(total / orden.length), techo = Math.ceil(total / orden.length);
-         /* Si el promedio da exacto (piso igual a techo), la única forma de dejar a
-            todos con los mismos días es soltando la regla flexible, así que se suelta ya. */
-        parejo = repartoDe(k, piso, techo, soltar || piso === techo);
-      }
-    };
-    /* Primero con todas las reglas: solo si así no hay ningún reparto que empareje el
-       mes, se vuelve a buscar dejando soltar la regla flexible (dos turnos seguidos). */
-    if (!cerrado){
-      buscarParejo(false);
-      if (!parejo) buscarParejo(true);
+    /* sin gente extra y, si no alcanza, con una tercera persona, con dos... */
+    for (let k = 0; k <= Math.min(findesSueltos, 4) && !parejo && !cerrado; k++){
+      let total = FD_POR_TURNO * sumaDias + 2 * k;   /* los días de FD que hay que repartir */
+      for (const n in diasMesIni) total += diasMesIni[n];
+      const piso = Math.floor(total / orden.length), techo = Math.ceil(total / orden.length);
+      parejo = repartoParejo(piso, techo, k);
     }
     if (parejo){
       const dif2 = desparejo(parejo), ext2 = extras(parejo);
@@ -1231,9 +1132,8 @@ function ajustar(fila, dias){
 /* Deja listo el mes (a,m): lo arma si todavía no existe y, si venía armado con el
    reparto viejo de hospitalización (los festivos los trabajaba todo el mundo),
    lo vuelve a armar con la regla nueva. Va mes por mes desde septiembre de 2026
-   para que el reparto quede encadenado desde octubre (la cuenta de los FD arranca
-   ahí); septiembre se deja como está, que es el mes del Excel. Urgencias no se
-   toca nunca. */
+   para que el reparto quede encadenado; septiembre se deja como está, que es el
+   punto de partida. Urgencias no se toca nunca. */
 function prepararMes(a, m){
   const clon = x => JSON.parse(JSON.stringify(x));
   /* El cuadro solo va desde septiembre de 2026. Un mes anterior no se arma ni se
@@ -1514,18 +1414,7 @@ function pintarAvisos(){
       }
   }
 
-  /* ¿El mes quedó parejo? (todos los que hacen FD con los mismos días.) Si quedó
-     parejo, es porque se soltó a propósito la única regla flexible (marcas 10 y 11:
-     alguien puede hacer dos turnos seguidos), así que de esa no se avisa. La del
-     turno de tres días —quien lo hace no cierra el mes ni lo repite al mes
-     siguiente— no se suelta nunca, así que esa se avisa siempre. */
-  const genteFD = HOSP.filter(p => p.nombre !== MONITORA && !(p.nombre === ANGYE && angyeSoloSemana(a, m)));
-  const diasFDDe = n => (hosp[n] || []).filter(c => c === 'FD').length;
-  const mesParejo = genteFD.length > 1 && diasFDDe(genteFD[0].nombre) > 0 &&
-                    genteFD.every(p => diasFDDe(p.nombre) === diasFDDe(genteFD[0].nombre));
-
   /* 4. hospitalización: nadie hace dos turnos seguidos (ni fin de semana ni festivo) */
-  if (!mesParejo)
   for (let j = 1; j < turnos.length; j++){
     const antes = cubrenTurno(turnos[j-1]);
     for (const n of cubrenTurno(turnos[j]))
@@ -1631,8 +1520,7 @@ function pintarAvisos(){
         for (const n of cubren)
           if (delMes.some(x => x.n === n))
             lista.push(cortoDe(n) + ': hizo el turno de tres días de este mes y también cierra el ' + eti +
-                       ' (el que cierra el último fin de semana del mes, si el lunes es festivo, se lleva el' +
-                       ' turno de tres días del mes que empieza: repetiría dos meses seguidos)');
+                       ' (no puede cerrar el mes en que le toca el turno de tres días)');
       }
     }
   }
@@ -2182,15 +2070,9 @@ async function sbLeerMes(a, m){
   const r = await fetch(url, { headers: cab });
   if (!r.ok) throw new Error('no pude leer (' + r.status + ')');
   const filas = await r.json();
-  /* 'marca': con qué reglas de hospitalización se guardó el mes en la nube. Va en una
-     fila aparte (cuadro 'meta'), que no estorba a los turnos: el que la lee la salta. */
-  const res = { urg: {}, hosp: {}, marca: 0 };
+  const res = { urg: {}, hosp: {} };
   for (let i = 0; i < filas.length; i++){
     const f = filas[i];
-    if (f.cuadro === 'meta'){
-      if (f.persona === 'marcaHosp') res.marca = Number(f.codigo) || 0;
-      continue;
-    }
     if (!res[f.cuadro]) continue;
     if (!res[f.cuadro][f.persona]) res[f.cuadro][f.persona] = [];
     res[f.cuadro][f.persona][f.dia - 1] = f.codigo || '';
@@ -2208,8 +2090,6 @@ async function sbGuardarMes(a, m, urg, hosp){
         filas.push({ mes: mes, cuadro: cuadro, persona: persona, dia: d, codigo: fila[d-1] || '' });
     }
   }
-  /* la fila de la marca: con qué reglas de hospitalización se armó el mes */
-  filas.push({ mes: mes, cuadro: 'meta', persona: 'marcaHosp', dia: 1, codigo: String(HOSP_MARCA) });
   const r = await fetch(sb.url + '/rest/v1/turnos?on_conflict=mes,cuadro,persona,dia', {
     method: 'POST',
     headers: Object.assign({}, cab, { 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
@@ -2229,16 +2109,8 @@ async function traerDeNube(silencioso){
   try {
     const datos = await sbLeerMes(ctx.a, ctx.m);
     const hay = (datos.urg && Object.keys(datos.urg).length) || (datos.hosp && Object.keys(datos.hosp).length);
-    /* El mes que quedó guardado en la nube con las reglas viejas de hospitalización
-       (marca distinta a la de este archivo) no se trae: se deja el que ya está armado
-       aquí con las reglas nuevas y se sube. Si no, al abrir el mes volvería el reparto
-       viejo. Urgencias sí se trae igual, que esa no cambió. Septiembre tampoco se
-       rearma: es el mes del Excel, tal como estaba. */
-    const esSeptiembre = (ctx.a === FD_REF.a && ctx.m === FD_REF.m);
-    const hospVieja = hay && !esSeptiembre && datos.marca !== HOSP_MARCA;
     if (hay){
       for (const sec of ['urg','hosp']){
-        if (sec === 'hosp' && hospVieja) continue;
         const origen = datos[sec] || {};
         for (const persona in origen)
           if (estado[ctx.k][sec][persona]) estado[ctx.k][sec][persona] = ajustar(origen[persona], ctx.dias);
