@@ -384,7 +384,7 @@ const SEPTIEMBRE = {
     'SANDRA MILENA GOMEZ FERNANDEZ':'D,D,D,D,FD,FD,D,D,D,D,D,.,.,D,D,D,D,D,.,.,D,D,D,D,D,FD,.,D,D,D'.split(','),
     'YAMILE ALVARADO HOYOS':'D,D,D,D,.,.,D,D,D,D,D,FD,FD,D,D,D,D,D,FD,.,D,D,D,D,D,.,.,D,D,D'.split(','),
     /* Angye entra desde septiembre: de lunes a viernes y sin fines de semana ni festivos */
-    'ANGYE BOLAÑOS':'D,D,D,D,.,.,D,D,D,D,D,.,.,D,D,D,D,D,.,.,D,D,D,D,D,.,.,D,D,D'.split(','),
+    'ANGYE CRISTINA BOLAÑOS DIAZ':'D,D,D,D,.,.,D,D,D,D,D,.,.,D,D,D,D,D,.,.,D,D,D,D,D,.,.,D,D,D'.split(','),
     'YAMILETH BERMÚDEZ GOMEZ (Monitor)':'D,D,D,D,.,.,D,D,D,D,D,.,.,D,D,D,D,D,.,.,D,D,D,D,D,.,.,D,D,D'.split(',')
   }
 };
@@ -1472,7 +1472,7 @@ function pintarAvisos(){
   if (angyeSoloSemana(a, m)){
     const fdAngye = (hosp[ANGYE] || []).filter(c => c === 'FD').length;
     if (fdAngye)
-      lista.push('Angye Bolaños: tiene ' + fdAngye + ' día' + (fdAngye === 1 ? '' : 's') + ' en FD, y en ' +
+      lista.push('Angye Cristina Bolaños Diaz: tiene ' + fdAngye + ' día' + (fdAngye === 1 ? '' : 's') + ' en FD, y en ' +
                  MESES[m-1] + ' solo hace de lunes a viernes (no hace fines de semana ni festivos)');
   }
   const quitadosAng = angyeCorregida[ctx.k] || 0;
