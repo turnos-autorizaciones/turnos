@@ -251,9 +251,11 @@ var SB_CUENTA = 'autorizacioneshospitalarias@hospitalsanjose.gov.co';   /* solo 
     El reparto va solo y cumple cinco reglas: quien cierra el último turno de un mes no abre el del mes siguiente,
     nadie hace dos turnos seguidos (ni un fin de semana, ni un festivo), el que llevó más FD en los meses anteriores va de
     último para emparejar (la cuenta arranca en septiembre), el lunes festivo pegado al fin de semana lo hacen los mismos dos,
-    y desde <strong>noviembre de 2026</strong> quien hace el turno de tres días (sábado, domingo y lunes festivo) no puede
-    cerrar el último fin de semana del mes (así el que hizo el 31 de octubre, el 1 y el 2 de noviembre no termina el fin de
-    semana de noviembre).
+    y desde <strong>octubre de 2026</strong> quien hace el turno de tres días (sábado, domingo y lunes festivo) no vuelve a
+    hacer otro turno de tres días —ni en ese mes ni en el siguiente— ni termina el mes con un fin de semana
+    (así, en octubre de 2026, quien hizo el 10, el 11 y el 12 no cierra el mes con el 31, el 1 y el 2, ni repite el
+    fin de semana con festivo en noviembre; y el que hizo el 31 de octubre, el 1 y el 2 de noviembre no termina el
+    fin de semana de noviembre).
     La columna del festivo sale marcada en la cabecera.
    El cuadro arranca en <strong>septiembre de 2026</strong> y sigue hacia adelante: los meses anteriores no se usan
    (si se escribe uno, vuelve solo a septiembre de 2026).
@@ -343,11 +345,14 @@ const ANGYE_FD_DESDE = {a:2026, m:11};
 /* verdadero mientras Angye solo haga de lunes a viernes (septiembre y octubre) */
 const angyeSoloSemana = (a, m) => (a < ANGYE_FD_DESDE.a) || (a === ANGYE_FD_DESDE.a && m < ANGYE_FD_DESDE.m);
 
-/* Regla nueva, desde noviembre de 2026: quien hace el turno de tres días
-   (sábado, domingo y lunes festivo) no puede cerrar el último fin de semana del
-   mes. Es el caso del fin de semana del 31 de octubre, el 1 y el 2 de noviembre
-   de 2026: los dos que lo hacen no pueden terminar el fin de semana de noviembre. */
-const TRIO_DESDE = {a:2026, m:11};
+/* Regla del turno de tres días, desde octubre de 2026: quien hace sábado,
+   domingo y lunes festivo no vuelve a hacer otro turno de tres días, ni en ese
+   mes ni en el siguiente, ni termina el mes con un fin de semana.
+   Es el caso de octubre de 2026: Sandra y Yeimi hacen el 10, el 11 y el 12, así
+   que no pueden cerrar octubre (el 31, el 1 y el 2) ni repetir el fin de semana
+   con festivo en noviembre (el 14, el 15 y el 16). Y los dos que hacen el 31 de
+   octubre, el 1 y el 2 de noviembre no terminan el fin de semana de noviembre. */
+const TRIO_DESDE = {a:2026, m:10};
 const desdeTrio  = (a, m) => (a > TRIO_DESDE.a) || (a === TRIO_DESDE.a && m >= TRIO_DESDE.m);
 
 /* Septiembre 2026, tal como lo tienes en el Excel (punto de partida). */
@@ -422,8 +427,12 @@ const FEST_LUNES = [
    vez; después se respeta lo que se ajuste a mano.
    Marca 5: entró Angye Bolaños al reparto (septiembre y octubre solo de lunes a
    viernes; desde noviembre como los demás) y se agregó la regla del turno de tres
-   días (sábado, domingo y lunes festivo), que no puede cerrar el fin de semana. */
-const HOSP_MARCA = 5;
+   días (sábado, domingo y lunes festivo), que no puede cerrar el fin de semana.
+   Marca 6: la regla del turno de tres días rige desde octubre de 2026 y mira los
+   dos lados: quien hizo un turno de tres días no repite otro en ese mes ni en el
+   siguiente (octubre de 2026: Sandra y Yeimi, que hacen el 10, el 11 y el 12, ya
+   no cierran octubre ni repiten el fin de semana con festivo en noviembre). */
+const HOSP_MARCA = 6;
 
 /* domingo de Pascua (algoritmo de Gauss/Meeus) */
 function pascua(a){
@@ -554,11 +563,14 @@ function generarAlmuerzos(a, m){
      2. Nadie hace dos turnos seguidos (ni un fin de semana, ni un festivo).
      3. El que llevó más FD en los meses anteriores hace menos después:
         en cada turno entran los que llevan menos FD acumulados.
-     4. Si el lunes que sigue al fin de semana es festivo, ese lunes lo hacen
-        LAS MISMAS DOS personas del sábado y el domingo: es un solo turno de
-        tres días. También cuando el fin de semana queda partido entre dos
-        meses (ahí el domingo y el lunes los hacen los dos que hicieron el
-        sábado del mes anterior).
+      4. Si el lunes que sigue al fin de semana es festivo, ese lunes lo hacen
+         LAS MISMAS DOS personas del sábado y el domingo: es un solo turno de
+         tres días. También cuando el fin de semana queda partido entre dos
+         meses (ahí el domingo y el lunes los hacen los dos que hicieron el
+         sábado del mes anterior).
+      5. Turno de tres días, desde octubre de 2026: el que hace sábado, domingo
+         y lunes festivo no vuelve a hacer otro turno de tres días —ni en ese
+         mes ni en el siguiente— ni termina el mes con un fin de semana.
    El punto de partida es septiembre de 2026, que ya está cuadrado.
    ---------------------------------------------------------------------------- */
 const FD_REF = {a:2026, m:9};     /* desde aquí se empiezan a contar los FD */
@@ -617,6 +629,24 @@ function ultimoDiaFD(fila, a, m){
   return HOSP.filter(p => p.nombre !== MONITORA)
              .filter(p => (f2[p.nombre] || [])[sab-1] === 'FD').map(p => p.nombre);
 }
+/* Quiénes hicieron un turno de tres días (sábado, domingo y lunes festivo) que
+   arranca en el mes (a,m). Es la base de la regla de no repetir: esos dos no
+   vuelven a hacer otro turno de tres días en el mes siguiente.
+   OJO: el turno de tres días que queda partido entre dos meses (sábado del mes
+   que termina, domingo y lunes festivo del que empieza) aquí no aparece, porque
+   en el cuadro del mes solo está el sábado; ese caso lo cubre ultimoDiaFD(). */
+function trioDeMes(fila, a, m){
+  const res = [];
+  if (!fila) return res;
+  for (const t of turnosDe(a, m)){
+    if (t.dias.length <= 2) continue;
+    for (const p of HOSP){
+      if (p.nombre === MONITORA || res.indexOf(p.nombre) >= 0) continue;
+      if (t.dias.some(d => (fila[p.nombre] || [])[d-1] === 'FD')) res.push(p.nombre);
+    }
+  }
+  return res;
+}
 /* El cuadro de hospitalización de un mes: el que está guardado o, si no, el que
    sale de estas mismas reglas.
    OJO con septiembre de 2026: es el punto de partida (el que estaba en el Excel).
@@ -645,7 +675,8 @@ function mesAntes(a, m){ return (m === 1) ? {a: a - 1, m: 12} : {a: a, m: m - 1}
 function copiaFD(x){
   const conteo = {};
   for (const n in x.conteo) conteo[n] = x.conteo[n];
-  return {conteo: conteo, cierre: x.cierre.slice(), cierreDia: x.cierreDia.slice()};
+  return {conteo: conteo, cierre: x.cierre.slice(), cierreDia: x.cierreDia.slice(),
+          trioAntes: (x.trioAntes || []).slice()};
 }
 function contextoFD(a, m){
   const k = claveMes(a, m);
@@ -653,10 +684,10 @@ function contextoFD(a, m){
   /* El cuadro arranca en septiembre de 2026, así que aquí nunca llega un mes
      anterior: la cuenta de FD empieza en cero en septiembre y de ahí en adelante
      se va arrastrando lo que dejó el mes de antes. */
-  if (antesDelPiso(a, m)) return {conteo: cero(), cierre: [], cierreDia: []};
+  if (antesDelPiso(a, m)) return {conteo: cero(), cierre: [], cierreDia: [], trioAntes: []};
   if (cacheFD[k]) return copiaFD(cacheFD[k]);
   const conteo = cero();
-  let cierre = [], cierreDia = [];
+  let cierre = [], cierreDia = [], trioAntes = [];
   if (a !== FD_REF.a || m !== FD_REF.m){
     /* se arranca de lo que dejó el mes anterior */
     const ant  = mesAntes(a, m);
@@ -669,8 +700,11 @@ function contextoFD(a, m){
       .filter(c => c === 'FD').length;
     cierre    = ultimoTurnoDe(fila, ant.a, ant.m);
     cierreDia = ultimoDiaFD(fila, ant.a, ant.m);
+    /* los del turno de tres días del mes pasado: no repiten turno de tres días en
+       este. Se saca de la fila que ya se tiene aquí, para no volver a armar el mes. */
+    trioAntes = trioDeMes(fila, ant.a, ant.m);
   }
-  const res = {conteo: conteo, cierre: cierre, cierreDia: cierreDia};
+  const res = {conteo: conteo, cierre: cierre, cierreDia: cierreDia, trioAntes: trioAntes};
   cacheFD[k] = res;
   return copiaFD(res);
 }
@@ -692,7 +726,7 @@ function generarHospitalizacion(a,m){
       if (w!==0 && w!==6 && !esFestivo(a, m, d)) res[p.nombre][d-1] = 'D';
     }
 
-  const {conteo, cierre, cierreDia} = contextoFD(a, m);
+  const {conteo, cierre, cierreDia, trioAntes} = contextoFD(a, m);
 
   /* El fin de semana que viene del mes anterior: si el día 1 cae domingo, ese día lo
      cubre quien hizo el sábado del mes anterior; y si el lunes que sigue es festivo,
@@ -713,23 +747,60 @@ function generarHospitalizacion(a,m){
     .filter(x => excluir.indexOf(x.nombre) < 0)
     .sort((x, y) => (conteo[x.nombre] - conteo[y.nombre]) || (x.i - y.i));
 
-  /* Regla nueva (desde noviembre de 2026): quien hace el turno de tres días
-     (sábado, domingo y lunes festivo) no puede terminar el fin de semana del mes.
-     - El caso que pidió el hospital es el fin de semana que viene del mes anterior
-       cuando el lunes es festivo: los dos que hicieron el sábado del mes pasado
-       hacen el domingo y el lunes, o sea el turno de tres días (31 de octubre, 1 y
-       2 de noviembre de 2026). Esos dos NO cierran el último fin de semana del mes.
-     - Los del turno de tres días que caiga dentro del mismo mes tampoco, pero eso
-       se respeta solo si alcanza la gente: primero manda que nadie repita el turno
-       anterior (si no, el último fin de semana quedaría sin cubrir). */
+  /* TURNO DE TRES DÍAS (desde octubre de 2026). Quien hace sábado, domingo y
+     lunes festivo no vuelve a hacer otro turno de tres días, ni en ese mes ni en
+     el siguiente, ni termina el mes con un fin de semana (porque el que cierra
+     el mes con un fin de semana, cuando el lunes es festivo, se lleva justamente
+     un turno de tres días).
+     Es el caso de octubre de 2026: Sandra y Yeimi hacen el 10, el 11 y el 12, así
+     que no pueden cerrar octubre (el 31, el 1 y el 2) ni repetir el fin de semana
+     con festivo en noviembre (el 14, el 15 y el 16).
+     Tres listas, para no confundir los dos motivos:
+       - vetadosFijos: los que ya hicieron un turno de tres días el mes pasado
+         (o el que arrancó el mes pasado y termina en este). No repiten turno de
+         tres días.
+       - vetados: los que ya hicieron un turno de tres días en este mes. No
+         repiten turno de tres días ni cierran el último fin de semana del mes.
+       - cierreTrio: los dos del turno de tres días que arrancó el mes pasado y
+         termina en este (el fin de semana partido). Esos dos no cierran el
+         último fin de semana del mes, como pidió el hospital.
+     Las reglas se respetan siempre que alcance la gente: si no alcanza, manda
+     primero que el turno quede cubierto por dos personas (que es lo que no puede
+     fallar) y luego se relaja lo demás. */
   const turnos = turnosDe(a, m);
   const valeTrio = desdeTrio(a, m);
   let ultimoFinde = null;
   for (const t of turnos) if (t.finde) ultimoFinde = t;
-  const vetadosFijos = [];     /* los del fin de semana que viene del mes pasado */
-  const vetados = [];          /* los de un turno de tres días de este mes */
-  if (valeTrio && arrastre.length === 2)
-    for (const n of cierreDia) if (vetadosFijos.indexOf(n) < 0) vetadosFijos.push(n);
+  /* el fin de semana que viene del mes pasado, cuando el lunes es festivo, es un
+     turno de tres días: lo forman el sábado del mes pasado, el domingo y el lunes */
+  const trioArrastre = (w1 === 0 && dias >= 2 && esFestivo(a, m, 2)) || (w1 === 1 && esFestivo(a, m, 1));
+  const vetadosFijos = [], vetados = [], cierreTrio = [];
+  if (valeTrio){
+    for (const n of trioAntes) if (vetadosFijos.indexOf(n) < 0) vetadosFijos.push(n);
+    if (trioArrastre && cierreDia.length === FD_POR_TURNO)
+      for (const n of cierreDia){
+        if (vetadosFijos.indexOf(n) < 0) vetadosFijos.push(n);
+        cierreTrio.push(n);
+      }
+  }
+  /* los que pueden hacer un turno de tres días y los que pueden cerrar el mes */
+  const sinTrio   = lista => lista.filter(x => vetadosFijos.indexOf(x.nombre) < 0 && vetados.indexOf(x.nombre) < 0);
+  const sinCierre = lista => lista.filter(x => vetados.indexOf(x.nombre) < 0 && cierreTrio.indexOf(x.nombre) < 0);
+  /* Si no se pueden dejar de lado todos los vetados, se dejan de lado los que se
+     pueda y el resto entran por orden de FD, para no perder nunca la cobertura. */
+  const preferir = (filtrado, todos) => (filtrado.length >= FD_POR_TURNO)
+    ? filtrado
+    : filtrado.concat(todos.filter(x => filtrado.indexOf(x) < 0));
+  /* Al turno que viene, si es un turno de tres días o el último fin de semana
+     del mes, se le reservan los que lo pueden hacer: no se gastan ahora. */
+  const reservar = (elegibles, siguiente) => {
+    if (!valeTrio || !siguiente) return elegibles;
+    const esTres = siguiente.dias.length > 2, esCierre = (siguiente === ultimoFinde);
+    if (!esTres && !esCierre) return elegibles;
+    const pool  = (esTres ? sinTrio(orden) : sinCierre(orden)).map(x => x.nombre);
+    const otros = elegibles.filter(x => pool.indexOf(x.nombre) < 0);
+    return (pool.length <= FD_POR_TURNO && otros.length >= FD_POR_TURNO) ? otros : elegibles;
+  };
 
   let previos = cierre.slice();
   for (let j = 0; j < turnos.length; j++){
@@ -737,22 +808,13 @@ function generarHospitalizacion(a,m){
     const esTrio = t.dias.length > 2;
     /* nadie hace dos turnos seguidos */
     let elegibles = menosFD(orden, previos);
-    /* si el que viene es el último fin de semana, en el turno de ahora no se gastan
-       los que pueden hacerlo: así el último fin de semana queda para ellos */
-    if (valeTrio && turnos[j+1] === ultimoFinde){
-      const libres = orden.map(x => x.nombre).filter(n2 => vetadosFijos.indexOf(n2) < 0 && vetados.indexOf(n2) < 0);
-      const otros  = elegibles.filter(x => libres.indexOf(x.nombre) < 0);
-      if (libres.length <= FD_POR_TURNO && otros.length >= FD_POR_TURNO) elegibles = otros;
-    }
-    /* y en el último fin de semana del mes no entran los del turno de tres días
+    /* no se gastan en este turno los que hacen falta para el que viene */
+    elegibles = reservar(elegibles, turnos[j+1]);
+    /* en un turno de tres días no entran los que ya llevan un turno de tres días */
+    if (valeTrio && esTrio) elegibles = preferir(sinTrio(elegibles), elegibles);
+    /* y en el último fin de semana del mes no cierran los del turno de tres días
        (si el último fin de semana es justamente ese turno, no aplica) */
-    if (valeTrio && t === ultimoFinde && !esTrio){
-      const sinFijos = elegibles.filter(x => vetadosFijos.indexOf(x.nombre) < 0);
-      const sinTodo  = sinFijos.filter(x => vetados.indexOf(x.nombre) < 0);
-      elegibles = (sinTodo.length  >= FD_POR_TURNO) ? sinTodo
-                : (sinFijos.length >= FD_POR_TURNO) ? sinFijos
-                : elegibles;
-    }
+    if (valeTrio && t === ultimoFinde && !esTrio) elegibles = preferir(sinCierre(elegibles), elegibles);
     const dos = elegibles.slice(0, FD_POR_TURNO).map(x => x.nombre);
     /* por si acaso no alcanzaran (no pasa con las personas que hay) */
     if (dos.length < FD_POR_TURNO)
@@ -761,8 +823,8 @@ function generarHospitalizacion(a,m){
       for (const d of t.dias) res[nom][d-1] = 'FD';
       conteo[nom] += t.dias.length;      /* cada día de FD cuenta para emparejar */
     }
-    /* los de este turno de tres días tampoco cierran el fin de semana del mes */
-    if (valeTrio && esTrio && t !== ultimoFinde)
+    /* los de este turno de tres días no repiten ni cierran el fin de semana del mes */
+    if (valeTrio && esTrio)
       for (const nom of dos) if (vetados.indexOf(nom) < 0) vetados.push(nom);
     previos = dos;
   }
@@ -1150,25 +1212,44 @@ function pintarAvisos(){
       '. En ' + MESES[m-1] + ' solo hace de lunes a viernes: no hace fines de semana ni festivos.</li>'
     : '';
 
-  /* 4c. desde noviembre de 2026: quien hace el turno de tres días (sábado, domingo y
-     lunes festivo) no puede cerrar el último fin de semana del mes. Esos dos son los
-     que traen el fin de semana del mes pasado cuando el lunes es festivo (31 de
-     octubre, 1 y 2 de noviembre de 2026) o los de un turno de tres días del mes. */
+  /* 4c. la regla del turno de tres días (desde octubre de 2026): quien hace sábado,
+     domingo y lunes festivo no vuelve a hacer otro turno de tres días —ni en ese mes
+     ni en el siguiente— ni cierra el último fin de semana del mes. */
   if (desdeTrio(a, m)){
     let cierreFinde = null;
     for (const t of turnos) if (t.finde) cierreFinde = t;
-    if (cierreFinde && cierreFinde.dias.length <= 2){
-      const trio = [];
-      if (arrastre.length === 2)
-        for (const n of ctxFD.cierreDia) if (trio.indexOf(n) < 0) trio.push(n);
-      for (const t of turnos)
-        if (t.dias.length > 2 && t !== cierreFinde)
-          for (const n of cubrenTurno(t)) if (trio.indexOf(n) < 0) trio.push(n);
-      for (const n of cubrenTurno(cierreFinde))
-        if (trio.indexOf(n) >= 0)
-          lista.push(cortoDe(n) + ': hizo el turno de tres días (sábado, domingo y lunes festivo) y también cierra el ' +
-                     'fin de semana del ' + cierreFinde.marca +
-                     ' (no puede repetir fin de semana con festivo incluido)');
+    /* hechos: los que ya llevan un turno de tres días (este mes o el pasado). No
+       repiten otro. delMes: los del turno de tres días que pasa por este mes (los
+       de este mes y el que viene del mes pasado). No cierran el mes. */
+    const hechos = [], delMes = [];
+    const anotar = (lista, n, donde) => { if (!lista.some(x => x.n === n)) lista.push({n: n, donde: donde}); };
+    if (arrastre.length === 2)
+      for (const n of ctxFD.cierreDia){
+        anotar(hechos, n, 'el fin de semana que viene del mes pasado (día ' + arrastre.join(' y ') + ')');
+        anotar(delMes, n, '');
+      }
+    for (const n of ctxFD.trioAntes)
+      anotar(hechos, n, 'el turno de tres días del mes pasado');
+    for (const t of turnos){
+      const cubren = cubrenTurno(t);
+      const eti = t.finde ? 'fin de semana del ' + t.marca : 'festivo del ' + t.marca;
+      if (t.dias.length > 2){
+        for (const n of cubren){
+          const ya = hechos.find(x => x.n === n);
+          if (ya)
+            lista.push(cortoDe(n) + ': ya hizo ' + ya.donde + ' y vuelve a hacer el turno de tres días de los días ' +
+                       t.dias.join(', ') + ' (no puede repetir un fin de semana con lunes festivo)');
+        }
+        for (const n of cubren){
+          anotar(hechos, n, 'el turno de tres días de los días ' + t.dias.join(', '));
+          anotar(delMes, n, '');
+        }
+      } else if (cierreFinde && t === cierreFinde){
+        for (const n of cubren)
+          if (delMes.some(x => x.n === n))
+            lista.push(cortoDe(n) + ': hizo el turno de tres días de este mes y también cierra el ' + eti +
+                       ' (no puede cerrar el mes en que le toca el turno de tres días)');
+      }
     }
   }
 
