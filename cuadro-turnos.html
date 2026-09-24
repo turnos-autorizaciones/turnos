@@ -246,7 +246,7 @@ var SB_CUENTA = 'autorizacioneshospitalarias@hospitalsanjose.gov.co';   /* solo 
     <strong>tercera persona</strong>; en el turno de tres días, en un festivo entre semana y en el fin de semana que cierra el
     mes siguen entrando dos. YAMILETH (monitora) no hace
     ni fines de semana ni festivos: nunca queda en FD, ni en un fin de semana ni en un lunes festivo.
-    <strong>ANGYE BOLAÑOS</strong> entró en septiembre de 2026: en <strong>septiembre y octubre</strong> solo hace de
+    <strong>ANGYE CRISTINA BOLAÑOS DÌAZ</strong> entró en septiembre de 2026: en <strong>septiembre y octubre</strong> solo hace de
     <strong>lunes a viernes</strong> (no hace fines de semana ni festivos); desde <strong>noviembre</strong> hace como los demás,
     de lunes a viernes y también los fines de semana y los festivos.
     Si el <strong>lunes que sigue al fin de semana es festivo</strong>, ese lunes lo hacen <strong>las mismas dos personas</strong> del
@@ -334,18 +334,19 @@ const HOSP = [
   {nombre:'ERIC FRANCISCO FERNANDEZ VALLEJO',  corto:'Eric F. Fernández',           titulo:'Eric Francisco Fernández Vallejo'},
   {nombre:'SANDRA MILENA GOMEZ FERNANDEZ',     corto:'Sandra M. Gómez',             titulo:'Sandra Milena Gómez Fernández'},
   {nombre:'YAMILE ALVARADO HOYOS',             corto:'Yamile Alvarado',             titulo:'Yamile Alvarado Hoyos'},
-  {nombre:'ANGYE BOLAÑOS',                     corto:'Angye Bolaños',               titulo:'Angye Bolaños'},
+  {nombre:'ANGYE BOLAÑOS',                     corto:'Angye C. Bolaños',            titulo:'Angye Cristina Bolaños Dìaz'},
   {nombre:'YAMILETH BERMÚDEZ GOMEZ (Monitor)', corto:'Yamileth Bermúdez (monitora)', titulo:'Yamileth Bermúdez Gómez (Monitor)'}
 ];
 const MONITORA = 'YAMILETH BERMÚDEZ GOMEZ (Monitor)';
 
-/* Angye Bolaños entra al cuadro de hospitalización en septiembre de 2026.
+/* Angye Cristina Bolaños Dìaz entra al cuadro de hospitalización en septiembre de 2026.
    Septiembre y octubre: trabaja de lunes a viernes (D) y NO hace fines de semana
    ni festivos (nunca queda en FD). Desde noviembre de 2026 entra al reparto
    normal: lunes a viernes y también fines de semana y festivos, con las mismas
    reglas de los demás compañeros.
-   OJO: su nombre ('ANGYE BOLAÑOS') es la llave con la que se guardan sus turnos
-   en el navegador y en Supabase: no se cambia. */
+   OJO: su llave ('ANGYE BOLAÑOS') es la que se guarda en el navegador y en
+   Supabase: no se cambia. Lo que se muestra es el nombre corregido, que va en
+   'corto' y 'titulo': Angye Cristina Bolaños Dìaz. */
 const ANGYE = 'ANGYE BOLAÑOS';
 const ANGYE_FD_DESDE = {a:2026, m:11};
 /* verdadero mientras Angye solo haga de lunes a viernes (septiembre y octubre) */
@@ -431,7 +432,7 @@ const FEST_LUNES = [
    sigue al fin de semana es festivo lo hacen los mismos dos. A los meses que
    se guardaron con una regla vieja se les vuelve a armar el cuadro una sola
    vez; después se respeta lo que se ajuste a mano.
-   Marca 5: entró Angye Bolaños al reparto (septiembre y octubre solo de lunes a
+   Marca 5: entró Angye Cristina Bolaños Dìaz al reparto (septiembre y octubre solo de lunes a
    viernes; desde noviembre como los demás) y se agregó la regla del turno de tres
    días (sábado, domingo y lunes festivo), que no puede cerrar el fin de semana.
    Marca 6: la regla del turno de tres días rige desde octubre de 2026 y mira los
@@ -1472,12 +1473,12 @@ function pintarAvisos(){
   if (angyeSoloSemana(a, m)){
     const fdAngye = (hosp[ANGYE] || []).filter(c => c === 'FD').length;
     if (fdAngye)
-      lista.push('Angye Bolaños: tiene ' + fdAngye + ' día' + (fdAngye === 1 ? '' : 's') + ' en FD, y en ' +
+      lista.push('Angye Cristina Bolaños Dìaz: tiene ' + fdAngye + ' día' + (fdAngye === 1 ? '' : 's') + ' en FD, y en ' +
                  MESES[m-1] + ' solo hace de lunes a viernes (no hace fines de semana ni festivos)');
   }
   const quitadosAng = angyeCorregida[ctx.k] || 0;
   const notaAngye = quitadosAng
-    ? '<li>Angye Bolaños: venía con ' + quitadosAng + ' día' + (quitadosAng === 1 ? '' : 's') +
+    ? '<li>Angye Cristina Bolaños Dìaz: venía con ' + quitadosAng + ' día' + (quitadosAng === 1 ? '' : 's') +
       ' en FD guardado' + (quitadosAng === 1 ? '' : 's') +
       (quitadosAng === 1 ? ' y se le quitó' : ' y se le quitaron') +
       '. En ' + MESES[m-1] + ' solo hace de lunes a viernes: no hace fines de semana ni festivos.</li>'
