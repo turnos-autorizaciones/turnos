@@ -241,21 +241,26 @@ var SB_CUENTA = 'autorizacioneshospitalarias@hospitalsanjose.gov.co';   /* solo 
 <h2><span class="punto" style="background:var(--g)"></span>Hospitalización<span class="cuenta" id="cuentaHosp"></span></h2>
 <p class="nota">
    Turnos de 8 h. Entre semana todos hacen <strong>D</strong>. Los <strong>fines de semana y los festivos</strong> son turnos que cubren
-    <strong>solo dos personas</strong>, en <strong>FD</strong> (8 h), por turnos: ese día no trabaja nadie más. YAMILETH (monitora) no hace
+    <strong>dos personas</strong>, en <strong>FD</strong> (8 h), por turnos: ese día no trabaja nadie más. Cuando hace falta para que
+    todos queden con los mismos turnos del mes, en un <strong>fin de semana de dos días</strong> (sábado y domingo) entra una
+    <strong>tercera persona</strong>; en el turno de tres días, en un festivo entre semana y en el fin de semana que cierra el
+    mes siguen entrando dos. YAMILETH (monitora) no hace
     ni fines de semana ni festivos: nunca queda en FD, ni en un fin de semana ni en un lunes festivo.
     <strong>ANGYE BOLAÑOS</strong> entró en septiembre de 2026: en <strong>septiembre y octubre</strong> solo hace de
     <strong>lunes a viernes</strong> (no hace fines de semana ni festivos); desde <strong>noviembre</strong> hace como los demás,
     de lunes a viernes y también los fines de semana y los festivos.
     Si el <strong>lunes que sigue al fin de semana es festivo</strong>, ese lunes lo hacen <strong>las mismas dos personas</strong> del
     sábado y el domingo: es un solo turno de tres días (también cuando el fin de semana queda partido entre dos meses).
-    El reparto va solo y cumple cinco reglas: quien cierra el último turno de un mes no abre el del mes siguiente,
+    El reparto va solo y cumple seis reglas: quien cierra el último turno de un mes no abre el del mes siguiente,
     nadie hace dos turnos seguidos (ni un fin de semana, ni un festivo), el que llevó más FD en los meses anteriores va de
     último para emparejar (la cuenta arranca en septiembre), el lunes festivo pegado al fin de semana lo hacen los mismos dos,
-    y desde <strong>octubre de 2026</strong> quien hace el turno de tres días (sábado, domingo y lunes festivo) no vuelve a
+    desde <strong>octubre de 2026</strong> quien hace el turno de tres días (sábado, domingo y lunes festivo) no vuelve a
     hacer otro turno de tres días —ni en ese mes ni en el siguiente— ni termina el mes con un fin de semana
     (así, en octubre de 2026, quien hizo el 10, el 11 y el 12 no cierra el mes con el 31, el 1 y el 2, ni repite el
     fin de semana con festivo en noviembre; y el que hizo el 31 de octubre, el 1 y el 2 de noviembre no termina el
-    fin de semana de noviembre).
+    fin de semana de noviembre), y desde <strong>octubre de 2026</strong> todos quedan con los mismos turnos de FD del
+    mes —o con uno más, uno menos—: en cada turno entran primero los que menos turnos llevan ese mes y, si hace falta,
+    en un fin de semana de dos días entra una tercera persona.
     La columna del festivo sale marcada en la cabecera.
    El cuadro arranca en <strong>septiembre de 2026</strong> y sigue hacia adelante: los meses anteriores no se usan
    (si se escribe uno, vuelve solo a septiembre de 2026).
@@ -271,7 +276,7 @@ var SB_CUENTA = 'autorizacioneshospitalarias@hospitalsanjose.gov.co';   /* solo 
 <div class="leyenda">
   <span><i class="mini cod D">D</i> día · 12 h</span>
   <span><i class="mini cod N">N</i> noche · 12 h</span>
-  <span><i class="mini cod FD">FD</i> fin de semana o festivo · hospitalización · 8 h · dos personas · el lunes festivo va con el fin de semana</span>
+  <span><i class="mini cod FD">FD</i> fin de semana o festivo · hospitalización · 8 h · dos personas (un fin de semana puede ser de tres, para emparejar los turnos del mes) · el lunes festivo va con el fin de semana</span>
   <span><i class="mini cod d">d</i> almuerzo · ½ h</span>
   <span><i class="mini cod n">n</i> disponible noche · 0 h</span>
   <span><i class="mini cod L">L</i> libre</span>
@@ -431,8 +436,12 @@ const FEST_LUNES = [
    Marca 6: la regla del turno de tres días rige desde octubre de 2026 y mira los
    dos lados: quien hizo un turno de tres días no repite otro en ese mes ni en el
    siguiente (octubre de 2026: Sandra y Yeimi, que hacen el 10, el 11 y el 12, ya
-   no cierran octubre ni repiten el fin de semana con festivo en noviembre). */
-const HOSP_MARCA = 6;
+   no cierran octubre ni repiten el fin de semana con festivo en noviembre).
+   Marca 7: desde octubre de 2026 todos quedan con los mismos turnos de FD del mes
+   (o lo más parecido). Para emparejar, en un fin de semana de dos días entra una
+   tercera persona. En el turno de tres días, en un festivo entre semana y en el
+   fin de semana que cierra el mes siguen entrando dos. */
+const HOSP_MARCA = 7;
 
 /* domingo de Pascua (algoritmo de Gauss/Meeus) */
 function pascua(a){
@@ -568,13 +577,25 @@ function generarAlmuerzos(a, m){
          tres días. También cuando el fin de semana queda partido entre dos
          meses (ahí el domingo y el lunes los hacen los dos que hicieron el
          sábado del mes anterior).
-      5. Turno de tres días, desde octubre de 2026: el que hace sábado, domingo
-         y lunes festivo no vuelve a hacer otro turno de tres días —ni en ese
-         mes ni en el siguiente— ni termina el mes con un fin de semana.
+     5. Turno de tres días, desde octubre de 2026: el que hace sábado, domingo
+        y lunes festivo no vuelve a hacer otro turno de tres días —ni en ese
+        mes ni en el siguiente— ni termina el mes con un fin de semana.
+     6. Igualar los turnos del mes, desde octubre de 2026: todos tienen que
+        quedar con los mismos turnos de FD (o lo más parecido posible: uno más,
+        uno menos). En cada turno entran primero los que menos turnos llevan ese
+        mes y, entre los que van igualados, los que menos FD llevan desde
+        septiembre. Si hace falta, en un fin de semana de dos días (sábado y
+        domingo) entra una TERCERA persona. Nunca entran tres en el turno de
+        tres días (sábado, domingo y lunes festivo), ni en un festivo entre
+        semana, ni en el fin de semana que cierra el mes.
    El punto de partida es septiembre de 2026, que ya está cuadrado.
    ---------------------------------------------------------------------------- */
 const FD_REF = {a:2026, m:9};     /* desde aquí se empiezan a contar los FD */
 const FD_POR_TURNO = 2;           /* dos personas cubren cada fin de semana y cada festivo */
+const FD_TOPE_FINDE = 3;          /* en un fin de semana de dos días (sábado y domingo) puede
+                                     entrar una tercera persona, para emparejar los turnos
+                                     del mes: nunca en el turno de tres días ni en el
+                                     festivo entre semana ni en el que cierra el mes */
 
 /* El cuadro arranca en Septiembre de 2026 y de ahí para adelante. Los meses
    anteriores no se usan: no se arman, no se muestran y no se guardan. Si por lo
@@ -741,11 +762,25 @@ function generarHospitalizacion(a,m){
   }
 
   /* los turnos del mes (fines de semana y festivos): dos personas en cada uno,
-     las que llevan menos FD y que no hayan hecho el turno anterior */
+     las que llevan menos FD y que no hayan hecho el turno anterior.
+     Desde octubre de 2026 manda primero cuántos TURNOS lleva cada uno ese mes, para
+     que todos queden con los mismos turnos de FD; entre los que van igualados
+     entran los que llevan menos días de FD desde septiembre. */
+  const igualar = desdeTrio(a, m);
   const orden = quien.map((p, i) => ({nombre: p.nombre, i: i}));
+  const turnosMes = {};                        /* turnos de FD hechos este mes */
+  for (const x of orden) turnosMes[x.nombre] = 0;
+  /* el fin de semana que viene del mes pasado también es un turno que se hace en
+     este mes: el domingo y, si es festivo, el lunes los hacen los mismos dos que
+     hicieron el sábado del mes anterior (y el domingo también es fin de semana). */
+  if (arrastre.length)
+    for (const n of cierreDia) if (turnosMes[n] !== undefined) turnosMes[n] += 1;
+  const turnosMesIni = {};                      /* cómo arranca la cuenta de turnos del mes */
+  for (const n in turnosMes) turnosMesIni[n] = turnosMes[n];
+  const valMes = x => igualar ? turnosMes[x.nombre] : 0;
   const menosFD = (lista, excluir) => lista
     .filter(x => excluir.indexOf(x.nombre) < 0)
-    .sort((x, y) => (conteo[x.nombre] - conteo[y.nombre]) || (x.i - y.i));
+    .sort((x, y) => (valMes(x) - valMes(y)) || (conteo[x.nombre] - conteo[y.nombre]) || (x.i - y.i));
 
   /* TURNO DE TRES DÍAS (desde octubre de 2026). Quien hace sábado, domingo y
      lunes festivo no vuelve a hacer otro turno de tres días, ni en ese mes ni en
@@ -803,6 +838,7 @@ function generarHospitalizacion(a,m){
   };
 
   let previos = cierre.slice();
+  const puestos = [];      /* quiénes cubren cada turno: dos, o tres si el fin de semana se empareja */
   for (let j = 0; j < turnos.length; j++){
     const t = turnos[j];
     const esTrio = t.dias.length > 2;
@@ -819,15 +855,191 @@ function generarHospitalizacion(a,m){
     /* por si acaso no alcanzaran (no pasa con las personas que hay) */
     if (dos.length < FD_POR_TURNO)
       for (const x of menosFD(orden, dos)) { if (dos.length >= FD_POR_TURNO) break; dos.push(x.nombre); }
+    puestos[j] = dos;
     for (const nom of dos){
-      for (const d of t.dias) res[nom][d-1] = 'FD';
       conteo[nom] += t.dias.length;      /* cada día de FD cuenta para emparejar */
+      turnosMes[nom] += 1;               /* y cada turno también, para los turnos del mes */
     }
     /* los de este turno de tres días no repiten ni cierran el fin de semana del mes */
     if (valeTrio && esTrio)
       for (const nom of dos) if (vetados.indexOf(nom) < 0) vetados.push(nom);
     previos = dos;
   }
+
+  /* EMPAREJAR LOS TURNOS DEL MES (desde octubre de 2026). Al repartir los turnos
+     unos quedan por encima de otros; ahí se corrige, en este orden:
+       1. Si una tercera persona ya no hace falta, se sale del fin de semana.
+       2. Se le pasa un turno a uno de los que van por debajo, quitándoselo a uno de
+          los que van por arriba (el turno queda con las mismas dos personas).
+       3. Si aun así no alcanza, en un fin de semana de dos días (sábado y domingo)
+          entra una TERCERA persona, la que menos turnos lleva ese mes.
+     En los tres casos nadie puede quedar en el turno de antes ni en el de después
+     (nadie hace dos turnos seguidos), ni entrar en un turno que no le toca por las
+     reglas del turno de tres días.
+     Tres personas NUNCA entran en el turno de tres días (sábado, domingo y lunes
+     festivo: ese lo hacen los mismos dos los tres días), ni en un festivo entre
+     semana, ni en el fin de semana que cierra el mes: ese lo cierran dos (si lo
+     cerraran tres, los tres pasarían al mes siguiente en el fin de semana partido) y
+     quien lo cierra tampoco abre el mes siguiente. */
+  if (igualar){
+    const pos = {}; for (const x of orden) pos[x.nombre] = x.i;
+    /* quiénes pueden entrar en un turno, según lo que ese turno exige */
+    const puedeEntrar = (t, n) => {
+      if (t !== ultimoFinde) return true;
+      return vetados.indexOf(n) < 0 && cierreTrio.indexOf(n) < 0;
+    };
+    /* los vecinos: el turno de antes, el de este y el de después. En el primer turno
+       del mes, el de antes es el último del mes pasado (los que lo cerraron no abren
+       el mes siguiente). */
+    const vecinosDe = j => [].concat(j === 0 ? cierre : [], puestos[j-1] || [], puestos[j], puestos[j+1] || []);
+    const masDias = (x, y) => conteo[y.nombre] - conteo[x.nombre];
+    const menosDias = (x, y) => (conteo[x.nombre] - conteo[y.nombre]) || (x.i - y.i);
+    let guarda = 0, toco = true;
+    while (toco && guarda++ < 60){
+      toco = false;
+      const vals = orden.map(x => turnosMes[x.nombre]);
+      const cMin = Math.min.apply(null, vals), cMax = Math.max.apply(null, vals);
+      if (cMax - cMin <= 1) break;                 /* ya quedaron parejos */
+      /* 1. una tercera persona que ya no hace falta se sale del fin de semana */
+      for (let j = 0; j < turnos.length && !toco; j++){
+        if (puestos[j].length <= FD_POR_TURNO) continue;
+        const sobra = puestos[j].filter(n => turnosMes[n] === cMax);
+        if (!sobra.length) continue;
+        puestos[j] = puestos[j].filter(n => n !== sobra[0]);
+        turnosMes[sobra[0]]--; conteo[sobra[0]] -= turnos[j].dias.length;
+        toco = true;
+      }
+      if (toco) continue;
+      /* 2. pasarle un turno a uno de los que van por debajo */
+      for (let j = 0; j < turnos.length && !toco; j++){
+        const t = turnos[j];
+        if (t.dias.length > 2) continue;                       /* el turno de tres días no se cambia */
+        if (puestos[j].length > FD_POR_TURNO) continue;        /* lo cubre el paso 1 */
+        const vecinos = vecinosDe(j);
+        const salen = puestos[j].map(n => ({nombre: n, i: pos[n]}))
+          .filter(x => turnosMes[x.nombre] === cMax).sort(masDias);
+        if (!salen.length) continue;
+        const entra = orden
+          .filter(x => turnosMes[x.nombre] === cMin && vecinos.indexOf(x.nombre) < 0 && puedeEntrar(t, x.nombre))
+          .sort(menosDias);
+        if (!entra.length) continue;
+        const sale = salen[0].nombre, mete = entra[0].nombre;
+        puestos[j] = puestos[j].filter(n => n !== sale).concat(mete);
+        turnosMes[sale]--; conteo[sale] -= t.dias.length;
+        turnosMes[mete]++; conteo[mete] += t.dias.length;
+        toco = true;
+      }
+      if (toco) continue;
+      /* 3. si aun así no alcanza, en un fin de semana de dos días entra una tercera */
+      for (let j = 0; j < turnos.length && !toco; j++){
+        const t = turnos[j];
+        if (!t.finde || t.dias.length !== 2 || t === ultimoFinde) continue;
+        if (puestos[j].length >= FD_TOPE_FINDE) continue;      /* ya van tres */
+        const vecinos = vecinosDe(j);
+        const cand = menosFD(orden, vecinos)
+          .filter(x => turnosMes[x.nombre] === cMin && puedeEntrar(t, x.nombre));
+        if (!cand.length) continue;
+        const nombre = cand[0].nombre;
+        puestos[j].push(nombre);
+        turnosMes[nombre]++; conteo[nombre] += t.dias.length;
+        toco = true;
+      }
+    }
+  }
+
+  /* ÚLTIMO RECURSO PARA EMPAREJAR: si el reparto de arriba igual deja a alguien con
+     menos turnos que otro, se arma el mes otra vez turno por turno, probando todas
+     las combinaciones de dos personas (con un tope de intentos, para que el cuadro
+     no se demore). Se cambia el reparto solo si sale uno en el que TODOS quedan con
+     los mismos turnos del mes, o con uno más, uno menos. */
+  const repartoParejo = () => {
+    const nombres = orden.map(x => x.nombre), P = nombres.length;
+    let total = FD_POR_TURNO * turnos.length;
+    for (const n of nombres) total += turnosMesIni[n];
+    const piso = Math.floor(total / P), techo = Math.ceil(total / P);
+    if (techo > turnos.length) return null;
+    const cuentas = {}, vetoDia = {}, puestos2 = new Array(turnos.length).fill(null);
+    for (const n of nombres) cuentas[n] = turnosMesIni[n];
+    let nodos = 0;
+    /* ¿puede entrar esta persona en este turno? */
+    const puede = (j, n) => {
+      const t = turnos[j];
+      if (j === 0 && cierre.indexOf(n) >= 0) return false;          /* no abre el que cerró */
+      if (j > 0 && puestos2[j-1].indexOf(n) >= 0) return false;     /* no dos turnos seguidos */
+      if (valeTrio){
+        if (t.dias.length > 2 && (vetadosFijos.indexOf(n) >= 0 || vetoDia[n])) return false;
+        if (t === ultimoFinde && t.dias.length <= 2 && (cierreTrio.indexOf(n) >= 0 || vetoDia[n])) return false;
+      }
+      return true;
+    };
+    const paso = j => {
+      if (nodos++ > 40000) return false;                            /* tope de intentos */
+      if (j === turnos.length){
+        for (const n of nombres) if (cuentas[n] < piso || cuentas[n] > techo) return false;
+        return true;
+      }
+      const libres = nombres.filter(n => puede(j, n)), combos = [];
+      for (let x = 0; x < libres.length; x++)
+        for (let y = x + 1; y < libres.length; y++) combos.push([libres[x], libres[y]]);
+      /* primero las parejas que llevan menos FD, como en el resto del reparto */
+      combos.sort((u, v) => (conteo[u[0]] + conteo[u[1]]) - (conteo[v[0]] + conteo[v[1]]));
+      const restantes = turnos.length - j - 1;
+      for (const par of combos){
+        let cabe = true;
+        for (const n of par){ cuentas[n]++; if (cuentas[n] > techo) cabe = false; }
+        if (cabe){
+          let falta = 0;
+          for (const n of nombres) falta += Math.max(0, piso - cuentas[n]);
+          if (falta > FD_POR_TURNO * restantes) cabe = false;       /* no alcanzan los turnos que quedan */
+        }
+        if (cabe){
+          const esTrio = turnos[j].dias.length > 2;
+          puestos2[j] = par;
+          if (esTrio) for (const n of par) vetoDia[n] = true;
+          if (paso(j + 1)) return true;
+          if (esTrio) for (const n of par) delete vetoDia[n];
+          puestos2[j] = null;
+        }
+        for (const n of par) cuentas[n]--;
+      }
+      return false;
+    };
+    return paso(0) ? puestos2.map(x => x.slice()) : null;
+  };
+
+  /* La última palabra la tiene el reparto más parejo: se compara el de arriba con el
+     que arma la búsqueda (siempre con dos personas por turno) y se deja el que deje a
+     todos más parejos. Si quedan igual de parejos, gana el que meta menos gente
+     extra: la tercera persona solo entra si de verdad hace falta. */
+  let reparto = puestos;
+  if (igualar){
+    const nombres = orden.map(x => x.nombre);
+    /* cuántos turnos llevaría cada uno con un reparto dado */
+    const desparejo = lista => {
+      const c = {};
+      for (const n of nombres) c[n] = turnosMesIni[n];
+      for (const grupo of lista) for (const n of grupo) c[n]++;
+      const v = nombres.map(n => c[n]);
+      return Math.max.apply(null, v) - Math.min.apply(null, v);
+    };
+    const extras = lista => lista.reduce((s, grupo) => s + Math.max(0, grupo.length - FD_POR_TURNO), 0);
+    /* lo más parejo que se puede quedar con dos personas en cada turno */
+    let total = FD_POR_TURNO * turnos.length;
+    for (const n of nombres) total += turnosMesIni[n];
+    const ideal = (total % nombres.length) ? 1 : 0;
+    const dif = desparejo(puestos);
+    if (dif > ideal || (dif === ideal && extras(puestos) > 0)){
+      const mejor = repartoParejo();
+      if (mejor){
+        const dif2 = desparejo(mejor);
+        if (dif2 < dif || (dif2 === dif && extras(mejor) < extras(puestos))) reparto = mejor;
+      }
+    }
+  }
+  /* Los turnos del mes quedan pintados en el cuadro. */
+  for (let j = 0; j < turnos.length; j++)
+    for (const nom of reparto[j])
+      for (const d of turnos[j].dias) res[nom][d-1] = 'FD';
   return res;
 }
 
@@ -1121,14 +1333,26 @@ function pintarAvisos(){
 
   /* 3. turnos de hospitalización (fines de semana y festivos): los cubren dos */
   const turnos = turnosDe(a, m);
+  /* el último fin de semana del mes: ese lo cierran dos, nunca tres */
+  let findeCierre = null;
+  for (const t of turnos) if (t.finde) findeCierre = t;
   /* cubre el turno quien está en FD TODOS los días del turno: con el lunes festivo
      pegado al fin de semana, el turno es de tres días y tienen que ser los mismos dos */
   const cubrenTurno = t => HOSP.filter(p => t.dias.some(d => (hosp[p.nombre] || [])[d-1] === 'FD')).map(p => p.nombre);
+  /* en un fin de semana de dos días (sábado y domingo) puede entrar una tercera
+     persona, para que todos queden con los mismos turnos del mes; el tope es 3.
+     En el turno de tres días, en el festivo entre semana y en el fin de semana que
+     cierra el mes el tope siguen siendo 2. */
+  const topeTurno = t => (t.finde && t.dias.length === 2 && t !== findeCierre) ? FD_TOPE_FINDE : FD_POR_TURNO;
   for (const t of turnos){
     const eti = t.finde ? 'fin de semana del ' + t.marca : 'festivo del ' + t.marca;
     const n = cubrenTurno(t).filter(x => x !== MONITORA).length;
-    if (n !== 2)
-      lista.push('Hospitalización, ' + eti + ': lo cubren ' + n + ' persona' + (n === 1 ? '' : 's') + ' (deberían ser 2)');
+    const tope = topeTurno(t);
+    if (n < FD_POR_TURNO)
+      lista.push('Hospitalización, ' + eti + ': lo cubren ' + n + ' persona' + (n === 1 ? '' : 's') + ' (deberían ser ' + tope + ')');
+    else if (n > tope)
+      lista.push('Hospitalización, ' + eti + ': lo cubren ' + n + ' persona' + (n === 1 ? '' : 's') +
+                 ' (deberían ser ' + FD_POR_TURNO + (tope > FD_POR_TURNO ? ', o ' + tope + ' si toca emparejar los turnos del mes' : '') + ')');
     /* En un turno de tres días (el lunes festivo pegado al fin de semana) los dos tienen
        que estar los tres días: aquí se avisa de quien haga solo una parte del turno. */
     if (t.dias.length > 2)
@@ -1268,7 +1492,7 @@ function pintarAvisos(){
   const caja = $('#avisos');
   if (!lista.length){
     caja.className = 'avisos ok';
-    caja.innerHTML = '<h3>Todo cuadra</h3><ul><li>Hay cobertura de día y de noche todos los días, no hay noches pegadas a un día, y los fines de semana y los festivos los cubren dos personas en FD (el lunes festivo que sigue al fin de semana lo hacen los mismos dos).</li>' + notaMonitora + notaAngye + '</ul>';
+    caja.innerHTML = '<h3>Todo cuadra</h3><ul><li>Hay cobertura de día y de noche todos los días, no hay noches pegadas a un día, y los fines de semana y los festivos los cubren dos personas en FD (el lunes festivo que sigue al fin de semana lo hacen los mismos dos). En un fin de semana de dos días puede haber una tercera persona, para que todos queden con los mismos turnos del mes.</li>' + notaMonitora + notaAngye + '</ul>';
   } else {
     caja.className = 'avisos';
     caja.innerHTML = '<h3>' + lista.length + ' cosa' + (lista.length === 1 ? '' : 's') + ' por revisar</h3><ul>' +
@@ -1678,7 +1902,7 @@ function descargarExcel(){
     leyenda: [
       { codigo: 'D',  texto: 'día · 12 h' },
       { codigo: 'N',  texto: 'noche · 12 h' },
-      { codigo: 'FD', texto: 'fin de semana o festivo · 8 h · dos personas (el lunes festivo va con el fin de semana)' },
+      { codigo: 'FD', texto: 'fin de semana o festivo · 8 h · dos personas (un fin de semana puede ser de tres, para emparejar los turnos del mes; el lunes festivo va con el fin de semana)' },
       { codigo: 'd',  texto: 'almuerzo · ½ h' },
       { codigo: 'L',  texto: 'libre' },
       { codigo: 'l',  texto: 'disponible día' },
