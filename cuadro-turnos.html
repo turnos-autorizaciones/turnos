@@ -241,14 +241,20 @@ var SB_CUENTA = 'autorizacioneshospitalarias@hospitalsanjose.gov.co';   /* solo 
 <h2><span class="punto" style="background:var(--g)"></span>Hospitalización<span class="cuenta" id="cuentaHosp"></span></h2>
 <p class="nota">
    Turnos de 8 h. Entre semana todos hacen <strong>D</strong>. Los <strong>fines de semana y los festivos</strong> son turnos que cubren
-   <strong>solo dos personas</strong>, en <strong>FD</strong> (8 h), por turnos: ese día no trabaja nadie más. YAMILETH (monitora) no hace
-   ni fines de semana ni festivos: nunca queda en FD, ni en un fin de semana ni en un lunes festivo.
-   Si el <strong>lunes que sigue al fin de semana es festivo</strong>, ese lunes lo hacen <strong>las mismas dos personas</strong> del
-   sábado y el domingo: es un solo turno de tres días (también cuando el fin de semana queda partido entre dos meses).
-   El reparto va solo y cumple cuatro reglas: quien cierra el último turno de un mes no abre el del mes siguiente,
-   nadie hace dos turnos seguidos (ni un fin de semana, ni un festivo), el que llevó más FD en los meses anteriores va de
-   último para emparejar (la cuenta arranca en septiembre), y el lunes festivo pegado al fin de semana lo hacen los mismos dos.
-   La columna del festivo sale marcada en la cabecera.
+    <strong>solo dos personas</strong>, en <strong>FD</strong> (8 h), por turnos: ese día no trabaja nadie más. YAMILETH (monitora) no hace
+    ni fines de semana ni festivos: nunca queda en FD, ni en un fin de semana ni en un lunes festivo.
+    <strong>ANGYE BOLAÑOS</strong> entró en septiembre de 2026: en <strong>septiembre y octubre</strong> solo hace de
+    <strong>lunes a viernes</strong> (no hace fines de semana ni festivos); desde <strong>noviembre</strong> hace como los demás,
+    de lunes a viernes y también los fines de semana y los festivos.
+    Si el <strong>lunes que sigue al fin de semana es festivo</strong>, ese lunes lo hacen <strong>las mismas dos personas</strong> del
+    sábado y el domingo: es un solo turno de tres días (también cuando el fin de semana queda partido entre dos meses).
+    El reparto va solo y cumple cinco reglas: quien cierra el último turno de un mes no abre el del mes siguiente,
+    nadie hace dos turnos seguidos (ni un fin de semana, ni un festivo), el que llevó más FD en los meses anteriores va de
+    último para emparejar (la cuenta arranca en septiembre), el lunes festivo pegado al fin de semana lo hacen los mismos dos,
+    y desde <strong>noviembre de 2026</strong> quien hace el turno de tres días (sábado, domingo y lunes festivo) no puede
+    cerrar el último fin de semana del mes (así el que hizo el 31 de octubre, el 1 y el 2 de noviembre no termina el fin de
+    semana de noviembre).
+    La columna del festivo sale marcada en la cabecera.
    El cuadro arranca en <strong>septiembre de 2026</strong> y sigue hacia adelante: los meses anteriores no se usan
    (si se escribe uno, vuelve solo a septiembre de 2026).
    </p>
@@ -320,9 +326,29 @@ const HOSP = [
   {nombre:'ERIC FRANCISCO FERNANDEZ VALLEJO',  corto:'Eric F. Fernández',           titulo:'Eric Francisco Fernández Vallejo'},
   {nombre:'SANDRA MILENA GOMEZ FERNANDEZ',     corto:'Sandra M. Gómez',             titulo:'Sandra Milena Gómez Fernández'},
   {nombre:'YAMILE ALVARADO HOYOS',             corto:'Yamile Alvarado',             titulo:'Yamile Alvarado Hoyos'},
+  {nombre:'ANGYE BOLAÑOS',                     corto:'Angye Bolaños',               titulo:'Angye Bolaños'},
   {nombre:'YAMILETH BERMÚDEZ GOMEZ (Monitor)', corto:'Yamileth Bermúdez (monitora)', titulo:'Yamileth Bermúdez Gómez (Monitor)'}
 ];
 const MONITORA = 'YAMILETH BERMÚDEZ GOMEZ (Monitor)';
+
+/* Angye Bolaños entra al cuadro de hospitalización en septiembre de 2026.
+   Septiembre y octubre: trabaja de lunes a viernes (D) y NO hace fines de semana
+   ni festivos (nunca queda en FD). Desde noviembre de 2026 entra al reparto
+   normal: lunes a viernes y también fines de semana y festivos, con las mismas
+   reglas de los demás compañeros.
+   OJO: su nombre ('ANGYE BOLAÑOS') es la llave con la que se guardan sus turnos
+   en el navegador y en Supabase: no se cambia. */
+const ANGYE = 'ANGYE BOLAÑOS';
+const ANGYE_FD_DESDE = {a:2026, m:11};
+/* verdadero mientras Angye solo haga de lunes a viernes (septiembre y octubre) */
+const angyeSoloSemana = (a, m) => (a < ANGYE_FD_DESDE.a) || (a === ANGYE_FD_DESDE.a && m < ANGYE_FD_DESDE.m);
+
+/* Regla nueva, desde noviembre de 2026: quien hace el turno de tres días
+   (sábado, domingo y lunes festivo) no puede cerrar el último fin de semana del
+   mes. Es el caso del fin de semana del 31 de octubre, el 1 y el 2 de noviembre
+   de 2026: los dos que lo hacen no pueden terminar el fin de semana de noviembre. */
+const TRIO_DESDE = {a:2026, m:11};
+const desdeTrio  = (a, m) => (a > TRIO_DESDE.a) || (a === TRIO_DESDE.a && m >= TRIO_DESDE.m);
 
 /* Septiembre 2026, tal como lo tienes en el Excel (punto de partida). */
 const conDias = (dias, total) =>
@@ -346,6 +372,8 @@ const SEPTIEMBRE = {
     'ERIC FRANCISCO FERNANDEZ VALLEJO':'D,D,D,D,FD,FD,D,D,D,D,D,.,.,D,D,D,D,D,.,FD,D,D,D,D,D,.,.,D,D,D'.split(','),
     'SANDRA MILENA GOMEZ FERNANDEZ':'D,D,D,D,FD,FD,D,D,D,D,D,.,.,D,D,D,D,D,.,.,D,D,D,D,D,FD,.,D,D,D'.split(','),
     'YAMILE ALVARADO HOYOS':'D,D,D,D,.,.,D,D,D,D,D,FD,FD,D,D,D,D,D,FD,.,D,D,D,D,D,.,.,D,D,D'.split(','),
+    /* Angye entra desde septiembre: de lunes a viernes y sin fines de semana ni festivos */
+    'ANGYE BOLAÑOS':'D,D,D,D,.,.,D,D,D,D,D,.,.,D,D,D,D,D,.,.,D,D,D,D,D,.,.,D,D,D'.split(','),
     'YAMILETH BERMÚDEZ GOMEZ (Monitor)':'D,D,D,D,.,.,D,D,D,D,D,.,.,D,D,D,D,D,.,.,D,D,D,D,D,.,.,D,D,D'.split(',')
   }
 };
@@ -391,8 +419,11 @@ const FEST_LUNES = [
    cubren dos personas (FD, 8 h) como los fines de semana, y si el lunes que
    sigue al fin de semana es festivo lo hacen los mismos dos. A los meses que
    se guardaron con una regla vieja se les vuelve a armar el cuadro una sola
-   vez; después se respeta lo que se ajuste a mano. */
-const HOSP_MARCA = 4;
+   vez; después se respeta lo que se ajuste a mano.
+   Marca 5: entró Angye Bolaños al reparto (septiembre y octubre solo de lunes a
+   viernes; desde noviembre como los demás) y se agregó la regla del turno de tres
+   días (sábado, domingo y lunes festivo), que no puede cerrar el fin de semana. */
+const HOSP_MARCA = 5;
 
 /* domingo de Pascua (algoritmo de Gauss/Meeus) */
 function pascua(a){
@@ -649,7 +680,10 @@ function olvidarFD(){ cacheFD = {}; }
 function generarHospitalizacion(a,m){
   const dias = diasDelMes(a,m), res = {};
   HOSP.forEach(p => res[p.nombre] = new Array(dias).fill(''));
-  const quien = HOSP.filter(p => p.nombre !== MONITORA);
+  /* En septiembre y octubre Angye no entra al reparto de los fines de semana y los
+     festivos: solo hace de lunes a viernes. Desde noviembre entra como los demás. */
+  const sinAngye = angyeSoloSemana(a, m);
+  const quien = HOSP.filter(p => p.nombre !== MONITORA && !(p.nombre === ANGYE && sinAngye));
 
   /* entre semana, cuando no es festivo: todos hacen D */
   for (const p of HOSP)
@@ -679,19 +713,74 @@ function generarHospitalizacion(a,m){
     .filter(x => excluir.indexOf(x.nombre) < 0)
     .sort((x, y) => (conteo[x.nombre] - conteo[y.nombre]) || (x.i - y.i));
 
+  /* Regla nueva (desde noviembre de 2026): quien hace el turno de tres días
+     (sábado, domingo y lunes festivo) no puede terminar el fin de semana del mes.
+     - El caso que pidió el hospital es el fin de semana que viene del mes anterior
+       cuando el lunes es festivo: los dos que hicieron el sábado del mes pasado
+       hacen el domingo y el lunes, o sea el turno de tres días (31 de octubre, 1 y
+       2 de noviembre de 2026). Esos dos NO cierran el último fin de semana del mes.
+     - Los del turno de tres días que caiga dentro del mismo mes tampoco, pero eso
+       se respeta solo si alcanza la gente: primero manda que nadie repita el turno
+       anterior (si no, el último fin de semana quedaría sin cubrir). */
+  const turnos = turnosDe(a, m);
+  const valeTrio = desdeTrio(a, m);
+  let ultimoFinde = null;
+  for (const t of turnos) if (t.finde) ultimoFinde = t;
+  const vetadosFijos = [];     /* los del fin de semana que viene del mes pasado */
+  const vetados = [];          /* los de un turno de tres días de este mes */
+  if (valeTrio && arrastre.length === 2)
+    for (const n of cierreDia) if (vetadosFijos.indexOf(n) < 0) vetadosFijos.push(n);
+
   let previos = cierre.slice();
-  for (const t of turnosDe(a, m)){
-    const dos = menosFD(orden, previos).slice(0, FD_POR_TURNO).map(x => x.nombre);
-    /* por si acaso no alcanzaran (no pasa con cinco personas) */
+  for (let j = 0; j < turnos.length; j++){
+    const t = turnos[j];
+    const esTrio = t.dias.length > 2;
+    /* nadie hace dos turnos seguidos */
+    let elegibles = menosFD(orden, previos);
+    /* si el que viene es el último fin de semana, en el turno de ahora no se gastan
+       los que pueden hacerlo: así el último fin de semana queda para ellos */
+    if (valeTrio && turnos[j+1] === ultimoFinde){
+      const libres = orden.map(x => x.nombre).filter(n2 => vetadosFijos.indexOf(n2) < 0 && vetados.indexOf(n2) < 0);
+      const otros  = elegibles.filter(x => libres.indexOf(x.nombre) < 0);
+      if (libres.length <= FD_POR_TURNO && otros.length >= FD_POR_TURNO) elegibles = otros;
+    }
+    /* y en el último fin de semana del mes no entran los del turno de tres días
+       (si el último fin de semana es justamente ese turno, no aplica) */
+    if (valeTrio && t === ultimoFinde && !esTrio){
+      const sinFijos = elegibles.filter(x => vetadosFijos.indexOf(x.nombre) < 0);
+      const sinTodo  = sinFijos.filter(x => vetados.indexOf(x.nombre) < 0);
+      elegibles = (sinTodo.length  >= FD_POR_TURNO) ? sinTodo
+                : (sinFijos.length >= FD_POR_TURNO) ? sinFijos
+                : elegibles;
+    }
+    const dos = elegibles.slice(0, FD_POR_TURNO).map(x => x.nombre);
+    /* por si acaso no alcanzaran (no pasa con las personas que hay) */
     if (dos.length < FD_POR_TURNO)
       for (const x of menosFD(orden, dos)) { if (dos.length >= FD_POR_TURNO) break; dos.push(x.nombre); }
     for (const nom of dos){
       for (const d of t.dias) res[nom][d-1] = 'FD';
       conteo[nom] += t.dias.length;      /* cada día de FD cuenta para emparejar */
     }
+    /* los de este turno de tres días tampoco cierran el fin de semana del mes */
+    if (valeTrio && esTrio && t !== ultimoFinde)
+      for (const nom of dos) if (vetados.indexOf(nom) < 0) vetados.push(nom);
     previos = dos;
   }
   return res;
+}
+
+/* La fila de Angye para los meses en que solo hace de lunes a viernes (septiembre
+   y octubre): D de lunes a viernes que no sean festivo, y libre los fines de semana
+   y los festivos. Es la misma fila que sale de generarHospitalizacion() en esos
+   meses; sirve para cuando el mes ya estaba guardado y hay que meterla sin tocar
+   el resto del cuadro (septiembre es el mes semilla y no se vuelve a armar). */
+function filaAngyeSoloSemana(a, m){
+  const dias = diasDelMes(a, m), f = new Array(dias).fill('');
+  for (let d = 1; d <= dias; d++){
+    const w = new Date(a, m-1, d).getDay();
+    if (w !== 0 && w !== 6 && !esFestivo(a, m, d)) f[d-1] = 'D';
+  }
+  return f;
 }
 
 /* ============================================================
@@ -743,6 +832,13 @@ function prepararMes(a, m){
       estado[k].hospV = HOSP_MARCA;
       cambio = true;
     }
+    /* Angye entra al cuadro desde septiembre de 2026. Si el mes ya estaba guardado
+       (en el navegador o traído de la nube) sin su fila —septiembre no se vuelve a
+       armar, es el punto de partida—, se le agrega la fila, sin tocar las demás. */
+    if (estado[k] && estado[k].hosp && !estado[k].hosp[ANGYE]){
+      estado[k].hosp[ANGYE] = filaAngyeSoloSemana(ya, mm);
+      cambio = true;
+    }
     mm++; if (mm > 12){ mm = 1; ya++; }
   }
   /* el mes queda guardado enseguida, para que no se pierda si no se toca nada */
@@ -769,6 +865,28 @@ function borrarFDMonitora(k, a, m, dias){
   if (quitados) monitoraCorregida[k] = quitados;
   return quitados;
 }
+/* Angye, en septiembre y octubre, solo hace de lunes a viernes: no hace fines de
+   semana ni festivos. El cuadro ya la deja por fuera del reparto en esos meses,
+   pero si en un mes guardado (o traído de la nube) quedó un FD en su fila, se borra
+   al abrir el mes. Devuelve cuántos días se le quitaron, para avisarlo en el panel. */
+let angyeCorregida = {};
+function borrarFDAngye(k, a, m, dias){
+  if (!angyeSoloSemana(a, m)) return 0;
+  const g = estado[k];
+  const fila = g && g.hosp && g.hosp[ANGYE];
+  if (!fila) return 0;
+  let quitados = 0;
+  for (let d = 1; d <= dias; d++){
+    if (fila[d-1] !== 'FD') continue;
+    /* Entre semana, cuando no es festivo, le toca D como a todos; si el día es fin
+       de semana o festivo, le queda libre. */
+    const w = new Date(a, m-1, d).getDay();
+    fila[d-1] = (w !== 0 && w !== 6 && !esFestivo(a, m, d)) ? 'D' : '';
+    quitados++;
+  }
+  if (quitados) angyeCorregida[k] = quitados;
+  return quitados;
+}
 
 function mesActual(){
   let {a, m} = leerMes($('#mes').value);
@@ -789,6 +907,7 @@ function mesActual(){
     for (const n in filas) filas[n] = ajustar(filas[n], dias);
   }
   if (borrarFDMonitora(k, a, m, dias)) guardar();
+  if (borrarFDAngye(k, a, m, dias)) guardar();
   return {a, m, k, dias};
 }
 
@@ -1012,8 +1131,46 @@ function pintarAvisos(){
     ? '<li>Yamileth Bermúdez (monitora): venía con ' + quitadosMon + ' día' + (quitadosMon === 1 ? '' : 's') +
       ' en FD guardado' + (quitadosMon === 1 ? '' : 's') +
       (quitadosMon === 1 ? ' y se le quitó' : ' y se le quitaron') +
-      '. La monitora no hace ni fines de semana ni festivos.</li>'
+       '. La monitora no hace ni fines de semana ni festivos.</li>'
     : '';
+
+  /* 3d. Angye, en septiembre y octubre, solo hace de lunes a viernes: no hace fines
+     de semana ni festivos. Desde noviembre entra como los demás. */
+  if (angyeSoloSemana(a, m)){
+    const fdAngye = (hosp[ANGYE] || []).filter(c => c === 'FD').length;
+    if (fdAngye)
+      lista.push('Angye Bolaños: tiene ' + fdAngye + ' día' + (fdAngye === 1 ? '' : 's') + ' en FD, y en ' +
+                 MESES[m-1] + ' solo hace de lunes a viernes (no hace fines de semana ni festivos)');
+  }
+  const quitadosAng = angyeCorregida[ctx.k] || 0;
+  const notaAngye = quitadosAng
+    ? '<li>Angye Bolaños: venía con ' + quitadosAng + ' día' + (quitadosAng === 1 ? '' : 's') +
+      ' en FD guardado' + (quitadosAng === 1 ? '' : 's') +
+      (quitadosAng === 1 ? ' y se le quitó' : ' y se le quitaron') +
+      '. En ' + MESES[m-1] + ' solo hace de lunes a viernes: no hace fines de semana ni festivos.</li>'
+    : '';
+
+  /* 4c. desde noviembre de 2026: quien hace el turno de tres días (sábado, domingo y
+     lunes festivo) no puede cerrar el último fin de semana del mes. Esos dos son los
+     que traen el fin de semana del mes pasado cuando el lunes es festivo (31 de
+     octubre, 1 y 2 de noviembre de 2026) o los de un turno de tres días del mes. */
+  if (desdeTrio(a, m)){
+    let cierreFinde = null;
+    for (const t of turnos) if (t.finde) cierreFinde = t;
+    if (cierreFinde && cierreFinde.dias.length <= 2){
+      const trio = [];
+      if (arrastre.length === 2)
+        for (const n of ctxFD.cierreDia) if (trio.indexOf(n) < 0) trio.push(n);
+      for (const t of turnos)
+        if (t.dias.length > 2 && t !== cierreFinde)
+          for (const n of cubrenTurno(t)) if (trio.indexOf(n) < 0) trio.push(n);
+      for (const n of cubrenTurno(cierreFinde))
+        if (trio.indexOf(n) >= 0)
+          lista.push(cortoDe(n) + ': hizo el turno de tres días (sábado, domingo y lunes festivo) y también cierra el ' +
+                     'fin de semana del ' + cierreFinde.marca +
+                     ' (no puede repetir fin de semana con festivo incluido)');
+    }
+  }
 
   /* 5. hospitalización: un festivo entre semana no puede quedar con gente en D */
   for (let d = 1; d <= dias; d++){
@@ -1030,11 +1187,11 @@ function pintarAvisos(){
   const caja = $('#avisos');
   if (!lista.length){
     caja.className = 'avisos ok';
-    caja.innerHTML = '<h3>Todo cuadra</h3><ul><li>Hay cobertura de día y de noche todos los días, no hay noches pegadas a un día, y los fines de semana y los festivos los cubren dos personas en FD (el lunes festivo que sigue al fin de semana lo hacen los mismos dos).</li>' + notaMonitora + '</ul>';
+    caja.innerHTML = '<h3>Todo cuadra</h3><ul><li>Hay cobertura de día y de noche todos los días, no hay noches pegadas a un día, y los fines de semana y los festivos los cubren dos personas en FD (el lunes festivo que sigue al fin de semana lo hacen los mismos dos).</li>' + notaMonitora + notaAngye + '</ul>';
   } else {
     caja.className = 'avisos';
     caja.innerHTML = '<h3>' + lista.length + ' cosa' + (lista.length === 1 ? '' : 's') + ' por revisar</h3><ul>' +
-      lista.slice(0, 60).map(x => '<li>' + x + '</li>').join('') + notaMonitora + '</ul>' +
+      lista.slice(0, 60).map(x => '<li>' + x + '</li>').join('') + notaMonitora + notaAngye + '</ul>' +
       (lista.length > 60 ? '<p class="nota" style="margin:8px 0 0">… y ' + (lista.length-60) + ' más.</p>' : '');
   }
 }
