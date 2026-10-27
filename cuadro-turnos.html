@@ -172,6 +172,74 @@ td.horas small{display:block;font-size:var(--fs-xs);font-weight:400;color:var(--
 }
 /* los recuadros para pegar los datos del proyecto ya no se usan (la pantalla de entrada sí) */
 .entrada-config, .nube-caja{display:none!important}
+
+/* ============ AUTORIZADORES (panel de la lista) ============ */
+.aut-capa{position:fixed;inset:0;z-index:70;display:flex;align-items:flex-start;justify-content:center;
+  padding:26px 16px;background:rgba(10,43,74,.55);overflow:auto}
+.aut-capa[hidden]{display:none}
+.aut{background:#fff;border-radius:16px;width:100%;max-width:900px;margin:auto;padding:20px 22px 18px;
+  box-shadow:0 24px 60px rgba(4,20,38,.35)}
+.aut-cab{display:flex;align-items:flex-start;gap:12px;margin-bottom:4px}
+.aut-cab h3{font-size:var(--fs-xl);font-weight:600;margin:0}
+.aut-cab .sub{margin:2px 0 0;max-width:660px}
+.aut-cerrar{margin-left:auto;background:none;border:0;font-size:24px;line-height:1;padding:0 4px;
+  cursor:pointer;color:var(--mut)}
+.aut table{width:100%;border-collapse:separate;border-spacing:0}
+.aut thead th{font-size:11px;color:var(--mut);font-weight:600;text-align:center;padding:7px 4px;
+  border-bottom:1px solid var(--line);white-space:nowrap;background:var(--ts-pale-2);position:static}
+.aut thead th.izq{text-align:left}
+.aut tbody td{padding:5px 4px;border-top:1px solid var(--line);text-align:center;font-size:13px;vertical-align:middle}
+.aut tbody td.izq{text-align:left;max-width:330px}
+.aut .quien{display:block;font-weight:500;color:var(--ink)}
+.aut .full{display:block;font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aut tr.off .quien{color:var(--mut);text-decoration:line-through}
+.aut tr.off{background:#fbfcfd}
+.aut .marca{display:inline-block;font-size:10px;color:var(--st-warn);background:var(--fp-warn-soft);
+  border:1px solid var(--fp-warn-line);border-radius:6px;padding:0 5px;margin-top:2px}
+.aut input[type=checkbox]{width:17px;height:17px;accent-color:var(--p);cursor:pointer;margin:0}
+.aut .quitar{background:none;border:0;color:var(--st-danger);font-size:11px;cursor:pointer;
+  text-decoration:underline;padding:0}
+.aut .nuevo{margin-top:16px;border:1px dashed var(--line);border-radius:12px;padding:12px 14px;background:var(--ts-pale)}
+.aut .nuevo h4{margin:0 0 8px;font-size:13px;font-weight:600}
+.aut .nuevo .fila{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:8px}
+.aut .nuevo input[type=text]{flex:1 1 300px;font:inherit;font-size:13px;padding:8px 10px;
+  border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+.aut .nuevo label{font-size:12px;color:var(--ink);display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+.aut .msg{font-size:12px;margin:10px 0 0;min-height:16px;color:var(--mut)}
+.aut .aviso-aut{font-size:12px;background:var(--fp-warn-soft);border:1px solid var(--fp-warn-line);
+  color:#8a6420;border-radius:9px;padding:8px 10px;margin:10px 0 0;line-height:1.45}
+.aut details{border-top:1px solid var(--line);margin-top:14px;padding-top:10px}
+.aut summary{cursor:pointer;font-size:12px;color:var(--mut)}
+.aut pre{white-space:pre-wrap;font-size:10.5px;line-height:1.45;background:var(--pd);color:#dce6f2;
+  padding:10px 12px;border-radius:8px;margin:10px 0 0;max-height:220px;overflow:auto}
+.aut .pie-lista{font-size:11px;color:var(--mut);margin:12px 0 0;line-height:1.5}
+tr.hist td{opacity:.62}
+tr.hist td.nombre{font-style:italic}
+/* en pantalla chica el panel se aprieta: se cae el nombre completo (queda en el
+   título) y se achican las casillas, para que entren las siete columnas */
+@media (max-width:720px){
+  .aut{padding:16px 10px 14px}
+  .aut .tabla-scroll{overflow-x:auto}
+  .aut .full{display:none}
+  .aut thead th{font-size:10px;padding:6px 3px}
+  .aut tbody td{padding:4px 3px}
+  .aut .quien{font-size:12px;line-height:1.25}
+  .aut tbody td.izq{max-width:none}
+  .aut input[type=checkbox]{width:16px;height:16px}
+  .aut .nuevo label{font-size:11px}
+  .aut .quitar{font-size:10px}
+  /* las siete columnas caben: el nombre se lleva lo que sobra y las casillas van fijas */
+  .aut table{table-layout:fixed;width:100%}
+  .aut thead th:nth-child(n+2){width:42px}
+  .aut thead th:nth-child(4){width:52px}
+  .aut thead th:nth-child(5){width:44px}
+  .aut thead th:nth-child(6){width:44px}
+  .aut thead th:nth-child(7){width:46px}
+  .aut .quien{overflow-wrap:anywhere}
+}
+@media print{
+  .aut-capa{display:none!important}
+}
 </style>
 <script>
 /* ============================================================
@@ -224,6 +292,7 @@ var SB_CUENTA = 'autorizacioneshospitalarias@hospitalsanjose.gov.co';   /* solo 
   <div class="acciones">
       <button id="btnSalirCab" class="cab-salir" hidden>Salir</button>
     <input type="month" id="mes" min="2026-09" value="2026-09">
+    <button id="btnAut">Autorizadores</button>
     <button id="btnGenerar" class="prim">Armar el mes</button>
     <button id="btnLimpiar">Vaciar mes</button>
     <button id="btnImprimir">Imprimir / PDF</button>
@@ -308,49 +377,193 @@ var SB_CUENTA = 'autorizacioneshospitalarias@hospitalsanjose.gov.co';   /* solo 
 
 <div class="paleta" id="paleta"></div>
 
+<!-- ============ PANEL DE AUTORIZADORES ============ -->
+<div class="aut-capa" id="autCapa" hidden>
+  <div class="aut" role="dialog" aria-modal="true" aria-labelledby="autTitulo">
+    <div class="aut-cab">
+      <div>
+        <h3 id="autTitulo">Autorizadores</h3>
+        <p class="sub">Quién entra al cuadro y en cuál. Lo que se inactiva deja de salir en el cuadro, en los
+          totales, en los avisos y en el Excel; sus turnos ya guardados no se borran.</p>
+      </div>
+      <button class="aut-cerrar" id="autCerrar" title="Cerrar" aria-label="Cerrar">&times;</button>
+    </div>
+    <div id="autAviso"></div>
+    <div class="tabla-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th class="izq">Autorizador</th>
+            <th>Activo</th>
+            <th>Urg.<br>ciclo</th>
+            <th>Almuerzo</th>
+            <th>Hosp.</th>
+            <th>Nunca<br>FD</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="autFilas"></tbody>
+      </table>
+    </div>
+
+    <div class="nuevo">
+      <h4>Agregar un autorizador</h4>
+      <div class="fila">
+        <input type="text" id="autNombre" placeholder="Nombre completo, como está en nómina" autocomplete="off">
+      </div>
+      <div class="fila">
+        <label><input type="checkbox" id="autUrg"> Urgencias (ciclo)</label>
+        <label><input type="checkbox" id="autAlm" checked> Almuerzo</label>
+        <label><input type="checkbox" id="autHosp" checked> Hospitalización</label>
+        <label><input type="checkbox" id="autSinFD"> No hace fines de semana ni festivos</label>
+      </div>
+      <div class="fila">
+        <button id="autAgregar" class="nube-btn">Agregar</button>
+        <button id="autSubir" class="nube-btn sec">Guardar la lista en Supabase</button>
+      </div>
+      <p class="msg" id="autMsg"></p>
+    </div>
+
+    <p class="pie-lista" id="autPie"></p>
+
+    <p class="pie-lista">
+      <strong>Cómo se lee la tabla.</strong> «Urg. ciclo» es el turno de 12 h de urgencias (ciclo N → n → L → D, con
+      1 de día y 1 de noche cada día): está hecho para <strong>4 activos</strong>. «Almuerzo» reparte las ½ h entre
+      semana —lunes al primero de la lista, martes al segundo, y así—; si hay menos de cinco, la rueda se repite.
+      «Hosp.» es el cuadro de 8 h. «Nunca FD» es para quien no hace fines de semana ni festivos (la monitora):
+      no entra al reparto de FD y solo queda en D entre semana. Un autorizador que se inactiva y tenía turnos
+      guardados en el mes que estás viendo sigue apareciendo en gris, al final del cuadro, para no perder el
+      histórico; en los meses siguientes ya no sale.
+    </p>
+
+    <details id="autSqlCaja">
+      <summary>Crear la tabla de la lista en Supabase (una sola vez)</summary>
+      <p class="pie-lista">Sin esta tabla la lista se guarda solo en este navegador. Con la tabla, todos los
+        equipos ven los mismos activos. Se pega en Supabase → SQL Editor → Run.</p>
+      <pre id="autSql"></pre>
+    </details>
+  </div>
+</div>
+
 <script>
 /* ============================================================
    DATOS BASE
    ============================================================ */
-/* OJO: 'nombre' es la llave con la que se guardan los turnos (local y en Supabase):
-   no se cambia. 'titulo' es el nombre completo bien escrito, con tildes, y es el
-   que sale en el Excel y en los títulos de la pantalla. */
-const URG_ROT = [
-  {nombre:'MARIA FERNANDA CALDERON BOHORQUEZ', corto:'María F. Calderón',  titulo:'María Fernanda Calderón Bohórquez', off:0},
-  {nombre:'LUIGUI ALEJANDRO SOLARTE MAMIAN',   corto:'Luigui A. Solarte',  titulo:'Luigui Alejandro Solarte Mamian',   off:1},
-  {nombre:'ASTRID VANESA ALVARADO HOYOS',      corto:'Astrid V. Alvarado', titulo:'Astrid Vanesa Alvarado Hoyos',      off:2},
-  {nombre:'JUAN DAVID FERNÁNDEZ VALLEJO',      corto:'Juan D. Fernández',  titulo:'Juan David Fernández Vallejo',      off:3}
-];
-const URG_ALM = [
-  {nombre:'YAMILE ALVARADO HOYOS',              corto:'Yamile Alvarado',         titulo:'Yamile Alvarado Hoyos'},
-  {nombre:'SANDRA MILENA GOMEZ FERNANDEZ',      corto:'Sandra M. Gómez',         titulo:'Sandra Milena Gómez Fernández'},
-  {nombre:'YEIMI ADRIANA CHITAN PECHENE',       corto:'Yeimi A. Chitán',         titulo:'Yeimi Adriana Chitán Pechene'},
-  {nombre:'ALEX FERNANDO VELASCO OBANDO',       corto:'Alex F. Velasco',         titulo:'Alex Fernando Velasco Obando'},
-  {nombre:'ERIC FRANCISCO FERNANDEZ VALLEJO',   corto:'Eric F. Fernández',       titulo:'Eric Francisco Fernández Vallejo'}
-];
-const HOSP = [
-  {nombre:'YEIMI ADRIANA CHITAN PECHENE',      corto:'Yeimi A. Chitán',             titulo:'Yeimi Adriana Chitán Pechene'},
-  {nombre:'ALEX FERNANDO VELASCO OBANDO',      corto:'Alex F. Velasco',             titulo:'Alex Fernando Velasco Obando'},
-  {nombre:'ERIC FRANCISCO FERNANDEZ VALLEJO',  corto:'Eric F. Fernández',           titulo:'Eric Francisco Fernández Vallejo'},
-  {nombre:'SANDRA MILENA GOMEZ FERNANDEZ',     corto:'Sandra M. Gómez',             titulo:'Sandra Milena Gómez Fernández'},
-  {nombre:'YAMILE ALVARADO HOYOS',             corto:'Yamile Alvarado',             titulo:'Yamile Alvarado Hoyos'},
-  {nombre:'ANGYE BOLAÑOS',                     corto:'Angye C. Bolaños',            titulo:'Angye Cristina Bolaños Dìaz'},
-  {nombre:'YAMILETH BERMÚDEZ GOMEZ (Monitor)', corto:'Yamileth Bermúdez (monitora)', titulo:'Yamileth Bermúdez Gómez (Monitor)'}
-];
-const MONITORA = 'YAMILETH BERMÚDEZ GOMEZ (Monitor)';
+/* ============================================================
+   AUTORIZADORES
+   Cada autorizador es una fila del cuadro. 'nombre' es la llave con la que se
+   guardan los turnos (local y en Supabase): NO se cambia nunca. 'cuadros' dice
+   en cuáles entra:
+      urg_rot  el ciclo de urgencias (N -> n -> L -> D, 12 h)
+      urg_alm  el almuerzo entre semana (½ h)
+      hosp     el cuadro de hospitalización (8 h)
+   'activo' es el interruptor del panel Autorizadores. 'noFD' es para quien no
+   hace fines de semana ni festivos (la monitora). 'soloSemanaHasta' es para quien
+   por ahora solo hace de lunes a viernes (Angye: hasta octubre de 2026).
+   'pos' es el puesto en cada cuadro (el orden en que se pinta) y 'orden' el
+   puesto en la lista del panel.
+   La lista se guarda en este navegador y, si existe la tabla 'autorizadores' en
+   Supabase, también allá: así todos los equipos ven los mismos activos.
+   ============================================================ */
+const AUT_KEY = 'cuadroTurnos.autorizadores.v1';
+const AUT_TABLA = 'autorizadores';
 
-/* Angye Cristina Bolaños Dìaz entra al cuadro de hospitalización en septiembre de 2026.
-   Septiembre y octubre: trabaja de lunes a viernes (D) y NO hace fines de semana
-   ni festivos (nunca queda en FD). Desde noviembre de 2026 entra al reparto
-   normal: lunes a viernes y también fines de semana y festivos, con las mismas
-   reglas de los demás compañeros.
-   OJO: su llave ('ANGYE BOLAÑOS') es la que se guarda en el navegador y en
-   Supabase: no se cambia. Lo que se muestra es el nombre corregido, que va en
-   'corto' y 'titulo': Angye Cristina Bolaños Dìaz. */
+const AUT_BASE = [
+  {nombre:'MARIA FERNANDA CALDERON BOHORQUEZ', corto:'María F. Calderón',  titulo:'María Fernanda Calderón Bohórquez', cuadros:['urg_rot'], pos:{urg_rot:1}, orden:1},
+  {nombre:'LUIGUI ALEJANDRO SOLARTE MAMIAN',   corto:'Luigui A. Solarte',  titulo:'Luigui Alejandro Solarte Mamian',   cuadros:['urg_rot'], pos:{urg_rot:2}, orden:2},
+  {nombre:'ASTRID VANESA ALVARADO HOYOS',      corto:'Astrid V. Alvarado', titulo:'Astrid Vanesa Alvarado Hoyos',      cuadros:['urg_rot'], pos:{urg_rot:3}, orden:3},
+  {nombre:'JUAN DAVID FERNÁNDEZ VALLEJO',      corto:'Juan D. Fernández',  titulo:'Juan David Fernández Vallejo',      cuadros:['urg_rot'], pos:{urg_rot:4}, orden:4},
+  {nombre:'YAMILE ALVARADO HOYOS',             corto:'Yamile Alvarado',    titulo:'Yamile Alvarado Hoyos',             cuadros:['urg_alm','hosp'], pos:{urg_alm:1, hosp:5}, orden:5},
+  {nombre:'SANDRA MILENA GOMEZ FERNANDEZ',     corto:'Sandra M. Gómez',    titulo:'Sandra Milena Gómez Fernández',     cuadros:['urg_alm','hosp'], pos:{urg_alm:2, hosp:4}, orden:6},
+  {nombre:'YEIMI ADRIANA CHITAN PECHENE',      corto:'Yeimi A. Chitán',    titulo:'Yeimi Adriana Chitán Pechene',      cuadros:['urg_alm','hosp'], pos:{urg_alm:3, hosp:1}, orden:7},
+  {nombre:'ALEX FERNANDO VELASCO OBANDO',      corto:'Alex F. Velasco',    titulo:'Alex Fernando Velasco Obando',      cuadros:['urg_alm','hosp'], pos:{urg_alm:4, hosp:2}, orden:8},
+  {nombre:'ERIC FRANCISCO FERNANDEZ VALLEJO',  corto:'Eric F. Fernández',  titulo:'Eric Francisco Fernández Vallejo',  cuadros:['urg_alm','hosp'], pos:{urg_alm:5, hosp:3}, orden:9},
+  /* Angye entra al cuadro de hospitalización en septiembre de 2026: septiembre y
+     octubre solo de lunes a viernes; desde noviembre, como los demás. */
+  {nombre:'ANGYE BOLAÑOS',                     corto:'Angye C. Bolaños',   titulo:'Angye Cristina Bolaños Dìaz',       cuadros:['hosp'], pos:{hosp:6}, orden:10, soloSemanaHasta:'2026-10'},
+  /* La monitora no hace ni fines de semana ni festivos: nunca queda en FD. */
+  {nombre:'YAMILETH BERMÚDEZ GOMEZ (Monitor)', corto:'Yamileth Bermúdez (monitora)', titulo:'Yamileth Bermúdez Gómez (Monitor)', cuadros:['hosp'], pos:{hosp:7}, orden:11, noFD:true}
+];
+
+/* Estas tres listas son las que usa todo el cuadro (pintar, generar, totales,
+   Excel). No se escriben a mano: salen de AUT, solo con los activos. */
+let AUT = [];
+let URG_ROT = [], URG_ALM = [], HOSP = [];
+
+/* Quedan por compatibilidad: son los dos casos especiales de siempre. Un
+   autorizador nuevo con la casilla «nunca FD» se comporta igual que la monitora
+   sin tocar el código. */
+const MONITORA = 'YAMILETH BERMÚDEZ GOMEZ (Monitor)';
 const ANGYE = 'ANGYE BOLAÑOS';
-const ANGYE_FD_DESDE = {a:2026, m:11};
-/* verdadero mientras Angye solo haga de lunes a viernes (septiembre y octubre) */
-const angyeSoloSemana = (a, m) => (a < ANGYE_FD_DESDE.a) || (a === ANGYE_FD_DESDE.a && m < ANGYE_FD_DESDE.m);
+
+function autCopia(x){
+  return {
+    nombre: String(x.nombre || '').trim(),
+    corto: x.corto || nombreTitulo(x.nombre || ''),
+    titulo: x.titulo || nombreTitulo(x.nombre || ''),
+    cuadros: (x.cuadros || []).slice(),
+    activo: x.activo !== false,
+    noFD: !!x.noFD,
+    soloSemanaHasta: x.soloSemanaHasta || '',
+    pos: Object.assign({}, x.pos || {}),
+    orden: x.orden || 0
+  };
+}
+function cargarAut(){
+  let guardado = null;
+  try { guardado = JSON.parse(localStorage.getItem(AUT_KEY) || 'null'); } catch(e){ guardado = null; }
+  const lista = (Array.isArray(guardado) && guardado.length) ? guardado : AUT_BASE;
+  AUT = lista.map((x, i) => { const c = autCopia(x); if (!c.orden) c.orden = i + 1; return c; });
+  refrescarListas();
+}
+function guardarAut(){
+  try { localStorage.setItem(AUT_KEY, JSON.stringify(AUT)); } catch(e){}
+}
+/* Vuelve a armar URG_ROT, URG_ALM y HOSP con los activos, cada uno en su puesto. */
+function refrescarListas(){
+  const puesto = (x, g) => (x.pos && x.pos[g] != null) ? x.pos[g] : (x.orden || 99);
+  const en = g => AUT.filter(x => x.activo && (x.cuadros || []).indexOf(g) >= 0)
+                    .sort((x, y) => (puesto(x, g) - puesto(y, g)) || String(x.corto).localeCompare(String(y.corto), 'es'));
+  URG_ROT = en('urg_rot');
+  URG_ALM = en('urg_alm');
+  HOSP    = en('hosp');
+}
+function autDe(nombre){
+  for (const x of AUT) if (x.nombre === nombre) return x;
+  return null;
+}
+function autActivo(nombre){ const p = autDe(nombre); return p ? !!p.activo : true; }
+/* ¿este autorizador no hace fines de semana ni festivos? (la monitora) */
+function autNoFD(p){
+  const a = p ? autDe(p.nombre) : null;
+  return !!(a && a.noFD);
+}
+/* ¿este autorizador, en el mes (a,m), solo hace de lunes a viernes? */
+function soloSemana(nombre, a, m){
+  const p = autDe(nombre);
+  if (!p || !p.soloSemanaHasta) return false;
+  const t = String(p.soloSemanaHasta).split('-').map(Number);
+  if (!(t[0] >= 1900 && t[1] >= 1 && t[1] <= 12)) return false;
+  return (a < t[0]) || (a === t[0] && m <= t[1]);
+}
+/* ¿sigue en el cuadro hoy? (activo y metido en ese cuadro) */
+function enCuadroHoy(nombre, sec){
+  const p = autDe(nombre);
+  if (!p) return true;
+  if (!p.activo) return false;
+  const grupos = (sec === 'urg') ? ['urg_rot','urg_alm'] : ['hosp'];
+  return grupos.some(g => (p.cuadros || []).indexOf(g) >= 0);
+}
+/* ¿tiene algún turno guardado en algún mes? (para no borrar a quien tiene historia) */
+function tieneDatos(nombre){
+  for (const k in estado){
+    for (const sec of ['urg','hosp']){
+      const f = estado[k] && estado[k][sec] && estado[k][sec][nombre];
+      if (f && f.some(c => c && c !== '.')) return true;
+    }
+  }
+  return false;
+}
 
 /* Regla del turno de tres días, desde octubre de 2026: quien hace sábado,
    domingo y lunes festivo no vuelve a hacer otro turno de tres días, ni en ese
@@ -554,17 +767,22 @@ function generarUrgencias(a,m){
   return res;
 }
 
-/* Los almuerzos: cada quien cubre su día de la semana, todas las semanas.
+/* Los almuerzos: cada quien cubre un día de la semana, todas las semanas.
    Sacado de AGOSTO y SEPTIEMBRE 2026, donde sale clavado:
-   lunes YAMILE, martes SANDRA, miércoles YEIMI, jueves ALEX, viernes ERIC. */
-const ALM_SEMANA = {1:0, 2:1, 3:2, 4:3, 5:4};   /* día de la semana (1=lunes) -> puesto en URG_ALM */
-
+   lunes YAMILE, martes SANDRA, miércoles YEIMI, jueves ALEX, viernes ERIC.
+   El día sale del puesto en la lista de almuerzo (lunes el primero, martes el
+   segundo...). Si hay menos de cinco activos, la rueda sigue: el lunes le toca al
+   primero y el viernes vuelve a caer en alguien que ya tenía otro día. Si hay más
+   de cinco, los últimos no alcanzan día: se les pone a mano. */
 function generarAlmuerzos(a, m){
   const dias = diasDelMes(a, m), res = {};
   URG_ALM.forEach(p => res[p.nombre] = new Array(dias).fill(''));
+  if (!URG_ALM.length) return res;
   for (let d = 1; d <= dias; d++){
-    const puesto = ALM_SEMANA[new Date(a, m-1, d).getDay()];
-    if (puesto !== undefined) res[URG_ALM[puesto].nombre][d-1] = 'd';
+    const w = new Date(a, m-1, d).getDay();
+    if (w === 0 || w === 6) continue;
+    const puesto = (w - 1) % URG_ALM.length;
+    res[URG_ALM[puesto].nombre][d-1] = 'd';
   }
   return res;
 }
@@ -640,7 +858,7 @@ function ultimoTurnoDe(fila, a, m){
   const t = turnosDe(a, m);
   if (!t.length || !fila) return [];
   const u = t[t.length - 1];
-  return HOSP.filter(p => p.nombre !== MONITORA)
+  return HOSP.filter(p => !autNoFD(p))
              .filter(p => u.dias.some(d => (fila[p.nombre] || [])[d-1] === 'FD')).map(p => p.nombre);
 }
 /* Quiénes hicieron FD el sábado del último fin de semana del mes, para pasar al mes
@@ -652,8 +870,8 @@ function ultimoDiaFD(fila, a, m){
   const w = new Date(a, m-1, dias).getDay();
   const sab = (w === 6) ? dias : (w === 0) ? dias - 1 : 0;
   if (!sab) return [];
-  /* la monitora queda por fuera: no hace fines de semana ni festivos */
-  return HOSP.filter(p => p.nombre !== MONITORA)
+  /* quien no hace fines de semana ni festivos queda por fuera */
+  return HOSP.filter(p => !autNoFD(p))
              .filter(p => (f2[p.nombre] || [])[sab-1] === 'FD').map(p => p.nombre);
 }
 /* Quiénes hicieron un turno de tres días (sábado, domingo y lunes festivo) que
@@ -668,7 +886,7 @@ function trioDeMes(fila, a, m){
   for (const t of turnosDe(a, m)){
     if (t.dias.length <= 2) continue;
     for (const p of HOSP){
-      if (p.nombre === MONITORA || res.indexOf(p.nombre) >= 0) continue;
+      if (autNoFD(p) || res.indexOf(p.nombre) >= 0) continue;
       if (t.dias.some(d => (fila[p.nombre] || [])[d-1] === 'FD')) res.push(p.nombre);
     }
   }
@@ -741,10 +959,10 @@ function olvidarFD(){ cacheFD = {}; }
 function generarHospitalizacion(a,m){
   const dias = diasDelMes(a,m), res = {};
   HOSP.forEach(p => res[p.nombre] = new Array(dias).fill(''));
-  /* En septiembre y octubre Angye no entra al reparto de los fines de semana y los
-     festivos: solo hace de lunes a viernes. Desde noviembre entra como los demás. */
-  const sinAngye = angyeSoloSemana(a, m);
-  const quien = HOSP.filter(p => p.nombre !== MONITORA && !(p.nombre === ANGYE && sinAngye));
+  /* Quedan por fuera del reparto de los fines de semana y los festivos los que no
+     hacen FD (la monitora) y los que por ahora solo hacen de lunes a viernes
+     (Angye en septiembre y octubre). El resto entra al reparto. */
+  const quien = HOSP.filter(p => !autNoFD(p) && !soloSemana(p.nombre, a, m));
 
   /* entre semana, cuando no es festivo: todos hacen D */
   for (const p of HOSP)
@@ -1091,12 +1309,12 @@ function generarHospitalizacion(a,m){
   return res;
 }
 
-/* La fila de Angye para los meses en que solo hace de lunes a viernes (septiembre
+/* La fila de quien, en ese mes, solo hace de lunes a viernes (Angye en septiembre
    y octubre): D de lunes a viernes que no sean festivo, y libre los fines de semana
    y los festivos. Es la misma fila que sale de generarHospitalizacion() en esos
    meses; sirve para cuando el mes ya estaba guardado y hay que meterla sin tocar
    el resto del cuadro (septiembre es el mes semilla y no se vuelve a armar). */
-function filaAngyeSoloSemana(a, m){
+function filaSoloSemana(a, m){
   const dias = diasDelMes(a, m), f = new Array(dias).fill('');
   for (let d = 1; d <= dias; d++){
     const w = new Date(a, m-1, d).getDay();
@@ -1154,60 +1372,58 @@ function prepararMes(a, m){
       estado[k].hospV = HOSP_MARCA;
       cambio = true;
     }
-    /* Angye entra al cuadro desde septiembre de 2026. Si el mes ya estaba guardado
-       (en el navegador o traído de la nube) sin su fila —septiembre no se vuelve a
-       armar, es el punto de partida—, se le agrega la fila, sin tocar las demás. */
-    if (estado[k] && estado[k].hosp && !estado[k].hosp[ANGYE]){
-      estado[k].hosp[ANGYE] = filaAngyeSoloSemana(ya, mm);
-      cambio = true;
+    /* Todo autorizador activo de hospitalización tiene su fila en el mes. Si el mes
+       ya estaba guardado (en el navegador o traído de la nube) y le falta —por
+       ejemplo uno que se acaba de agregar, o Angye en septiembre, que no se vuelve
+       a armar porque es el punto de partida—, se le crea la fila sin tocar las
+       demás: D de lunes a viernes, y libre fines de semana y festivos. */
+    if (estado[k] && estado[k].hosp && ya === a && mm === m){
+      for (const p of HOSP){
+        if (estado[k].hosp[p.nombre]) continue;
+        /* La monitora y quien por ahora solo hace semana entran con su fila de
+           lunes a viernes. A los demás se les deja la fila vacía: nadie inventa
+           turnos por ellos; el reparto sale al darle a «Armar el mes». */
+        estado[k].hosp[p.nombre] = (autNoFD(p) || soloSemana(p.nombre, ya, mm))
+          ? filaSoloSemana(ya, mm)
+          : new Array(diasDelMes(ya, mm)).fill('');
+        cambio = true;
+      }
     }
     mm++; if (mm > 12){ mm = 1; ya++; }
   }
   /* el mes queda guardado enseguida, para que no se pierda si no se toca nada */
   if (cambio) guardar();
 }
-/* La monitora (Yamileth) no hace ni fines de semana ni festivos. El cuadro ya la
-   deja por fuera, pero si en un mes guardado (o traído de la nube) quedó un FD en
-   su fila, se borra al abrir el mes: así la regla no se cae por datos viejos.
-   Devuelve cuántos días se le quitaron, para avisarlo en el panel. */
-let monitoraCorregida = {};
-function borrarFDMonitora(k, a, m, dias){
+/* Quien no hace fines de semana ni festivos (la monitora) y quien por ahora solo
+   hace de lunes a viernes (Angye en septiembre y octubre) no puede quedar en FD.
+   El cuadro ya los deja por fuera del reparto, pero si en un mes guardado (o
+   traído de la nube) quedó un FD en su fila, se corrige al abrir el mes: así la
+   regla no se cae por datos viejos. Entre semana, cuando no es festivo, les toca
+   D como a todos; si el día es fin de semana o festivo, les queda libre.
+   Devuelve cuántos días se corrigieron, para avisarlo en el panel. */
+let fdCorregidos = {};        /* { 'claveMes': { nombre: cuántos días } } */
+function borrarFDNoVa(k, a, m, dias){
   const g = estado[k];
-  const fila = g && g.hosp && g.hosp[MONITORA];
-  if (!fila) return 0;
-  let quitados = 0;
-  for (let d = 1; d <= dias; d++){
-    if (fila[d-1] !== 'FD') continue;
-    /* Entre semana, cuando no es festivo, a la monitora le toca D como a todos;
-       si el día es fin de semana o festivo, le queda libre. */
-    const w = new Date(a, m-1, d).getDay();
-    fila[d-1] = (w !== 0 && w !== 6 && !esFestivo(a, m, d)) ? 'D' : '';
-    quitados++;
+  if (!g || !g.hosp) return 0;
+  let total = 0;
+  for (const nombre in g.hosp){
+    if (!(autNoFD({nombre: nombre}) || soloSemana(nombre, a, m))) continue;
+    const fila = g.hosp[nombre];
+    if (!fila) continue;
+    let quitados = 0;
+    for (let d = 1; d <= dias; d++){
+      if (fila[d-1] !== 'FD') continue;
+      const w = new Date(a, m-1, d).getDay();
+      fila[d-1] = (w !== 0 && w !== 6 && !esFestivo(a, m, d)) ? 'D' : '';
+      quitados++;
+    }
+    if (quitados){
+      if (!fdCorregidos[k]) fdCorregidos[k] = {};
+      fdCorregidos[k][nombre] = quitados;
+      total += quitados;
+    }
   }
-  if (quitados) monitoraCorregida[k] = quitados;
-  return quitados;
-}
-/* Angye, en septiembre y octubre, solo hace de lunes a viernes: no hace fines de
-   semana ni festivos. El cuadro ya la deja por fuera del reparto en esos meses,
-   pero si en un mes guardado (o traído de la nube) quedó un FD en su fila, se borra
-   al abrir el mes. Devuelve cuántos días se le quitaron, para avisarlo en el panel. */
-let angyeCorregida = {};
-function borrarFDAngye(k, a, m, dias){
-  if (!angyeSoloSemana(a, m)) return 0;
-  const g = estado[k];
-  const fila = g && g.hosp && g.hosp[ANGYE];
-  if (!fila) return 0;
-  let quitados = 0;
-  for (let d = 1; d <= dias; d++){
-    if (fila[d-1] !== 'FD') continue;
-    /* Entre semana, cuando no es festivo, le toca D como a todos; si el día es fin
-       de semana o festivo, le queda libre. */
-    const w = new Date(a, m-1, d).getDay();
-    fila[d-1] = (w !== 0 && w !== 6 && !esFestivo(a, m, d)) ? 'D' : '';
-    quitados++;
-  }
-  if (quitados) angyeCorregida[k] = quitados;
-  return quitados;
+  return total;
 }
 
 function mesActual(){
@@ -1224,12 +1440,21 @@ function mesActual(){
   const k = claveMes(a, m), dias = diasDelMes(a, m);
   olvidarFD();
   prepararMes(a, m);
+  /* Toda persona activa tiene su fila en el mes, aunque esté vacía: si no, no se
+     podría escribir en su casilla. Las filas que ya existían no se tocan. */
+  if (estado[k]){
+    if (!estado[k].urg)  estado[k].urg  = {};
+    if (!estado[k].hosp) estado[k].hosp = {};
+    for (const p of URG_ROT.concat(URG_ALM))
+      if (!estado[k].urg[p.nombre]) estado[k].urg[p.nombre] = new Array(dias).fill('');
+    for (const p of HOSP)
+      if (!estado[k].hosp[p.nombre]) estado[k].hosp[p.nombre] = new Array(dias).fill('');
+  }
   for (const sec of ['urg','hosp']){
     const filas = (estado[k] && estado[k][sec]) || {};
     for (const n in filas) filas[n] = ajustar(filas[n], dias);
   }
-  if (borrarFDMonitora(k, a, m, dias)) guardar();
-  if (borrarFDAngye(k, a, m, dias)) guardar();
+  if (borrarFDNoVa(k, a, m, dias)) guardar();
   return {a, m, k, dias};
 }
 
@@ -1237,13 +1462,25 @@ function mesActual(){
    PINTAR
    ============================================================ */
 function cortoDe(nombre){
-  const p = URG_ROT.concat(URG_ALM, HOSP).find(x => x.nombre === nombre);
-  return p ? p.corto : nombre;
+  const p = autDe(nombre);
+  return p ? (p.corto || p.titulo || nombre) : nombre;
 }
 /* El nombre completo bien escrito (con tildes), para el Excel y los títulos de la pantalla. */
 function largoDe(nombre){
-  const p = URG_ROT.concat(URG_ALM, HOSP).find(x => x.nombre === nombre);
-  return (p && p.titulo) ? p.titulo : nombreTitulo(nombre);
+  const p = autDe(nombre);
+  return (p && (p.titulo || p.corto)) ? (p.titulo || p.corto) : nombreTitulo(nombre);
+}
+/* Las filas que se pintan en un cuadro ese mes: primero los activos, en su puesto,
+   y al final los que ya no están activos pero tienen turnos guardados en ese mes
+   (el histórico), para no perder lo que se trabajó. */
+function nombresDe(sec){
+  const filas = (estado[ctx.k] && estado[ctx.k][sec]) || {};
+  const base = (sec === 'urg') ? URG_ROT.concat(URG_ALM) : HOSP;
+  const nombres = base.map(p => p.nombre);
+  for (const n of Object.keys(filas))
+    if (nombres.indexOf(n) < 0 && (filas[n] || []).some(c => c && c !== '.')) nombres.push(n);
+  /* los del histórico quedan al final, en el orden en que ya venían */
+  return nombres.slice().sort((x, y) => (enCuadroHoy(x, sec) ? 0 : 1) - (enCuadroHoy(y, sec) ? 0 : 1));
 }
 /* Nombre completo para el Excel: la primera letra de cada palabra en mayúscula y el resto en minúscula.
    Ej.: MARIA FERNANDA CALDERON BOHORQUEZ -> Maria Fernanda Calderon Bohorquez */
@@ -1254,7 +1491,7 @@ function nombreTitulo(nombre){
 function pintarTabla(id, nombres, seccion, fnHoras){
   const t = document.getElementById(id);
   const {a, m, dias} = ctx;
-  const cab = ['<tr><th class="nombre">Compañero</th>'];
+  const cab = ['<tr><th class="nombre">Autorizador</th>'];
   for (let d = 1; d <= dias; d++){
     const w = new Date(a, m-1, d).getDay();
     const fest = festivoDe(a, m, d);
@@ -1267,7 +1504,9 @@ function pintarTabla(id, nombres, seccion, fnHoras){
   const filas = [];
   for (const n of nombres){
     const fila = estado[ctx.k][seccion][n] || [];
-    const celdas = ['<td class="nombre" title="' + largoDe(n) + '">' + cortoDe(n) + '</td>'];
+    const hist = !enCuadroHoy(n, seccion);
+    const celdas = ['<td class="nombre" title="' + largoDe(n) + (hist ? ' · ya no está activo' : '') +
+      '">' + cortoDe(n) + '</td>'];
     for (let d = 1; d <= dias; d++){
       const c = fila[d-1] || '';
       const w = new Date(ctx.a, ctx.m-1, d).getDay();
@@ -1294,44 +1533,43 @@ function pintarTabla(id, nombres, seccion, fnHoras){
       if (partes.length) extra = '<small>' + partes.join(' · ') + '</small>';
     }
     celdas.push('<td class="horas">' + fmt(fnHoras(fila)) + ' h' + extra + '</td>');
-    filas.push('<tr>' + celdas.join('') + '</tr>');
+    filas.push('<tr' + (hist ? ' class="hist"' : '') + '>' + celdas.join('') + '</tr>');
   }
   t.querySelector('tbody').innerHTML = filas.join('');
 }
 
 function pintarCuentas(){
   const urg  = estado[ctx.k].urg,  hosp = estado[ctx.k].hosp;
-  const tU = URG_ROT.concat(URG_ALM).reduce((s,p)=> s + horasUrg(urg[p.nombre]  || []), 0);
-  const tH = HOSP.reduce((s,p)=> s + horasHosp(hosp[p.nombre] || []), 0);
+  const tU = nombresDe('urg').reduce((s,n)=> s + horasUrg(urg[n]  || []), 0);
+  const tH = nombresDe('hosp').reduce((s,n)=> s + horasHosp(hosp[n] || []), 0);
   $('#cuentaUrg').textContent  = MESES[ctx.m-1] + ' ' + ctx.a + ' · ' + ctx.dias + ' días · ' + fmt(tU) + ' h';
   $('#cuentaHosp').textContent = MESES[ctx.m-1] + ' ' + ctx.a + ' · ' + ctx.dias + ' días · ' + fmt(tH) + ' h';
 }
 
 function pintarTotales(){
   const urg = estado[ctx.k].urg, hosp = estado[ctx.k].hosp;
-  const filas = ['<tr><th>Compañero</th><th>Cuadro</th><th>Turnos</th><th>Horas</th></tr>'];
-  const anota = (p, cuadro, fila, fn, detalle) => {
-    const turnos = fila.filter(c => c && 'DNnldLTMFD'.includes(c) && c !== 'L').length;
-    filas.push('<tr><td>' + cortoDe(p.nombre) + '</td><td>' + cuadro + '</td><td>' + detalle +
+  const filas = ['<tr><th>Autorizador</th><th>Cuadro</th><th>Turnos</th><th>Horas</th></tr>'];
+  const anota = (nombre, cuadro, fila, fn, detalle) => {
+    filas.push('<tr><td>' + cortoDe(nombre) + '</td><td>' + cuadro + '</td><td>' + detalle +
       '</td><td class="num">' + fmt(fn(fila)) + ' h</td></tr>');
   };
-  for (const p of URG_ROT){
-    const f = urg[p.nombre] || [];
+  /* Urgencias: el que hace el ciclo (D/N) y el que cubre el almuerzo (d). Una misma
+     persona puede salir en las dos líneas si hace las dos cosas. */
+  for (const n of nombresDe('urg')){
+    const f = urg[n] || [];
     const nD = f.filter(c=>c==='D').length, nN = f.filter(c=>c==='N').length, nFD = f.filter(c=>c==='FD').length;
-    anota(p, 'Urgencias', f, horasUrg, nD + ' días · ' + nN + ' noches' + (nFD ? ' · ' + nFD + ' FD' : ''));
+    if (nD || nN || nFD)
+      anota(n, 'Urgencias', f, horasUrg, nD + ' días · ' + nN + ' noches' + (nFD ? ' · ' + nFD + ' FD' : ''));
+    const nAlm = f.filter(c=>c==='d').length;
+    if (nAlm) anota(n, 'Urgencias (almuerzo)', f, horasUrg, nAlm + ' veces × ½ h');
   }
-  for (const p of URG_ALM){
-    const f = urg[p.nombre] || [];
-    const nD = f.filter(c=>c==='d').length;
-    if (!nD) continue;
-    anota(p, 'Urgencias (almuerzo)', f, horasUrg, nD + ' veces × ½ h');
-  }
-  for (const p of HOSP){
-    const f = hosp[p.nombre] || [];
+  for (const n of nombresDe('hosp')){
+    const f = hosp[n] || [];
     const nD = f.filter(c=>c==='D').length;
+    if (!nD && !f.some(c => c === 'FD' || c === 'G1' || c === 'C')) continue;
     let nFinde = 0, nFest = 0;
     f.forEach((c, i) => { if (c !== 'FD') return; if (esFinDe(ctx.a, ctx.m, i+1)) nFinde++; else nFest++; });
-    anota(p, 'Hospitalización', f, horasHosp, nD + ' días · ' + nFinde + ' fin de semana' +
+    anota(n, 'Hospitalización', f, horasHosp, nD + ' días · ' + nFinde + ' fin de semana' +
       (nFest ? ' · ' + nFest + ' festivo' + (nFest === 1 ? '' : 's') : ''));
   }
   $('#tablaTotales').innerHTML = filas.join('');
@@ -1363,20 +1601,32 @@ function pintarAvisos(){
   const urg = estado[ctx.k].urg, hosp = estado[ctx.k].hosp;
   const lista = [];
 
+  /* Las listas de los avisos son las mismas filas que se pintan ese mes (activos +
+     histórico), para que un mes viejo no saque avisos falsos por un autorizador
+     que después se inactivó. */
+  const genteUrg  = nombresDe('urg');
+  const genteHosp = nombresDe('hosp');
+
+  /* 0. el ciclo de urgencias es de 4: con otro número, los turnos se pisan */
+  if (URG_ROT.length !== 4)
+    lista.push('Urgencias: hay ' + URG_ROT.length + ' activo' + (URG_ROT.length === 1 ? '' : 's') +
+               ' en el ciclo y el ciclo N → n → L → D está hecho para 4. Con ' + URG_ROT.length +
+               ' no cuadra el turno de día y de noche: deja 4 activos en «Urg. ciclo» (panel Autorizadores).');
+
   /* 1. cobertura: cada día 1 de día y 1 de noche */
   for (let d = 1; d <= dias; d++){
-    const nD = URG_ROT.filter(p => (urg[p.nombre]||[])[d-1] === 'D').length;
-    const nN = URG_ROT.filter(p => (urg[p.nombre]||[])[d-1] === 'N').length;
+    const nD = genteUrg.filter(n => (urg[n]||[])[d-1] === 'D').length;
+    const nN = genteUrg.filter(n => (urg[n]||[])[d-1] === 'N').length;
     if (nD !== 1) lista.push('Urgencias, día ' + d + ': hay ' + nD + ' de turno de día' + (nD === 0 ? ' (falta uno)' : ' (debería ser 1)'));
     if (nN !== 1) lista.push('Urgencias, día ' + d + ': hay ' + nN + ' de turno de noche' + (nN === 0 ? ' (falta uno)' : ' (debería ser 1)'));
   }
 
   /* 2. descanso: una noche pegada a un día */
-  for (const p of URG_ROT){
-    const f = urg[p.nombre] || [];
+  for (const n of genteUrg){
+    const f = urg[n] || [];
     for (let d = 1; d < dias; d++)
       if (f[d-1] === 'N' && f[d] === 'D')
-        lista.push(p.corto + ': la noche del día ' + d + ' va pegada al día ' + (d+1) + ', sin descanso');
+        lista.push(cortoDe(n) + ': la noche del día ' + d + ' va pegada al día ' + (d+1) + ', sin descanso');
   }
 
   /* 3. turnos de hospitalización (fines de semana y festivos): los cubren dos */
@@ -1386,7 +1636,7 @@ function pintarAvisos(){
   for (const t of turnos) if (t.finde) findeCierre = t;
   /* cubre el turno quien está en FD TODOS los días del turno: con el lunes festivo
      pegado al fin de semana, el turno es de tres días y tienen que ser los mismos dos */
-  const cubrenTurno = t => HOSP.filter(p => t.dias.some(d => (hosp[p.nombre] || [])[d-1] === 'FD')).map(p => p.nombre);
+  const cubrenTurno = t => genteHosp.filter(n => t.dias.some(d => (hosp[n] || [])[d-1] === 'FD'));
   /* en un fin de semana de dos días (sábado y domingo) puede entrar una tercera
      persona, para que todos queden con los mismos días de FD del mes; el tope es 3.
      En el turno de tres días, en el festivo entre semana y en el fin de semana que
@@ -1394,7 +1644,7 @@ function pintarAvisos(){
   const topeTurno = t => (t.finde && t.dias.length === 2 && t !== findeCierre) ? FD_TOPE_FINDE : FD_POR_TURNO;
   for (const t of turnos){
     const eti = t.finde ? 'fin de semana del ' + t.marca : 'festivo del ' + t.marca;
-    const n = cubrenTurno(t).filter(x => x !== MONITORA).length;
+    const n = cubrenTurno(t).filter(x => !autNoFD({nombre: x})).length;
     const tope = topeTurno(t);
     if (n < FD_POR_TURNO)
       lista.push('Hospitalización, ' + eti + ': lo cubren ' + n + ' persona' + (n === 1 ? '' : 's') + ' (deberían ser ' + tope + ')');
@@ -1404,12 +1654,12 @@ function pintarAvisos(){
     /* En un turno de tres días (el lunes festivo pegado al fin de semana) los dos tienen
        que estar los tres días: aquí se avisa de quien haga solo una parte del turno. */
     if (t.dias.length > 2)
-      for (const p of HOSP){
-        if (p.nombre === MONITORA) continue;
-        const f = hosp[p.nombre] || [];
+      for (const nom of genteHosp){
+        if (autNoFD({nombre: nom})) continue;
+        const f = hosp[nom] || [];
         const hechos = t.dias.filter(d => f[d-1] === 'FD').length;
         if (hechos && hechos !== t.dias.length)
-          lista.push(cortoDe(p.nombre) + ': hizo ' + hechos + ' de los ' + t.dias.length + ' días del ' + eti +
+          lista.push(cortoDe(nom) + ': hizo ' + hechos + ' de los ' + t.dias.length + ' días del ' + eti +
                      ' (días ' + t.dias.join(', ') + '), y el turno lo hacen los mismos dos todos los días');
       }
   }
@@ -1440,7 +1690,7 @@ function pintarAvisos(){
   if (new Date(a, m-1, 1).getDay() === 0 && dias >= 2 && esFestivo(a, m, 2)) arrastre.push(2);
   if (arrastre.length){
     const etiqueta = 'Hospitalización, el fin de semana que viene del mes pasado (día ' + arrastre.join(' y ') + ')';
-    const cubren = HOSP.filter(p => p.nombre !== MONITORA && arrastre.some(d => (hosp[p.nombre] || [])[d-1] === 'FD')).map(p => p.nombre);
+    const cubren = genteHosp.filter(n => !autNoFD({nombre: n}) && arrastre.some(d => (hosp[n] || [])[d-1] === 'FD'));
     if (cubren.length !== 2)
       lista.push(etiqueta + ': lo cubren ' + cubren.length + ' persona' + (cubren.length === 1 ? '' : 's') + ' (deberían ser 2)');
     else
@@ -1450,39 +1700,35 @@ function pintarAvisos(){
         if (arrastre.some(d => (hosp[n] || [])[d-1] !== 'FD'))
           lista.push(cortoDe(n) + ': solo hizo una parte del fin de semana que viene del mes pasado (días ' + arrastre.join(', ') + '), y lo hacen los mismos dos todo el fin de semana');
       }
-    const enD = HOSP.filter(p => arrastre.some(d => (hosp[p.nombre] || [])[d-1] === 'D')).map(p => p.corto);
+    const enD = genteHosp.filter(n => arrastre.some(d => (hosp[n] || [])[d-1] === 'D')).map(n => cortoDe(n));
     if (enD.length)
       lista.push(etiqueta + ': ' + enD.join(', ') + (enD.length === 1 ? ' está' : ' están') + ' en D, y ese día va en FD con los mismos dos del fin de semana');
   }
-  /* 3c. la monitora no hace ni fines de semana ni festivos */
-  const fdMonitora = (hosp[MONITORA] || []).filter(c => c === 'FD').length;
-  if (fdMonitora)
-    lista.push('Yamileth Bermúdez (monitora): tiene ' + fdMonitora + ' día' + (fdMonitora === 1 ? '' : 's') +
-               ' en FD, y la monitora no hace ni fines de semana ni festivos');
-  /* si al abrir el mes se le quitó algún FD que venía guardado, queda anotado */
-  const quitadosMon = monitoraCorregida[ctx.k] || 0;
-  const notaMonitora = quitadosMon
-    ? '<li>Yamileth Bermúdez (monitora): venía con ' + quitadosMon + ' día' + (quitadosMon === 1 ? '' : 's') +
-      ' en FD guardado' + (quitadosMon === 1 ? '' : 's') +
-      (quitadosMon === 1 ? ' y se le quitó' : ' y se le quitaron') +
-       '. La monitora no hace ni fines de semana ni festivos.</li>'
-    : '';
-
-  /* 3d. Angye, en septiembre y octubre, solo hace de lunes a viernes: no hace fines
-     de semana ni festivos. Desde noviembre entra como los demás. */
-  if (angyeSoloSemana(a, m)){
-    const fdAngye = (hosp[ANGYE] || []).filter(c => c === 'FD').length;
-    if (fdAngye)
-      lista.push('Angye Cristina Bolaños Dìaz: tiene ' + fdAngye + ' día' + (fdAngye === 1 ? '' : 's') + ' en FD, y en ' +
+  /* 3c. quien no hace fines de semana ni festivos (la monitora) no puede quedar en
+     FD, y quien por ahora solo hace de lunes a viernes (Angye en septiembre y
+     octubre) tampoco. Vale para cualquier autorizador con esa marca. */
+  for (const nom of genteHosp){
+    const nf = (hosp[nom] || []).filter(c => c === 'FD').length;
+    if (!nf) continue;
+    if (autNoFD({nombre: nom}))
+      lista.push(cortoDe(nom) + ': tiene ' + nf + ' día' + (nf === 1 ? '' : 's') +
+                 ' en FD, y no hace ni fines de semana ni festivos');
+    else if (soloSemana(nom, a, m))
+      lista.push(cortoDe(nom) + ': tiene ' + nf + ' día' + (nf === 1 ? '' : 's') + ' en FD, y en ' +
                  MESES[m-1] + ' solo hace de lunes a viernes (no hace fines de semana ni festivos)');
   }
-  const quitadosAng = angyeCorregida[ctx.k] || 0;
-  const notaAngye = quitadosAng
-    ? '<li>Angye Cristina Bolaños Dìaz: venía con ' + quitadosAng + ' día' + (quitadosAng === 1 ? '' : 's') +
-      ' en FD guardado' + (quitadosAng === 1 ? '' : 's') +
-      (quitadosAng === 1 ? ' y se le quitó' : ' y se le quitaron') +
-      '. En ' + MESES[m-1] + ' solo hace de lunes a viernes: no hace fines de semana ni festivos.</li>'
-    : '';
+  /* si al abrir el mes se le quitó algún FD que venía guardado, queda anotado */
+  let notaMonitora = '';
+  const corregidos = fdCorregidos[ctx.k] || {};
+  for (const nom in corregidos){
+    const q = corregidos[nom];
+    notaMonitora += '<li>' + cortoDe(nom) + ': venía con ' + q + ' día' + (q === 1 ? '' : 's') +
+      ' en FD guardado' + (q === 1 ? '' : 's') + (q === 1 ? ' y se le quitó' : ' y se le quitaron') +
+      (autNoFD({nombre: nom}) ? '. No hace ni fines de semana ni festivos.'
+                              : '. En ' + MESES[m-1] + ' solo hace de lunes a viernes: no hace fines de semana ni festivos.') +
+      '</li>';
+  }
+  const notaAngye = '';
 
   /* 4c. la regla del turno de tres días (desde octubre de 2026): quien hace sábado,
      domingo y lunes festivo no vuelve a hacer otro turno de tres días —ni en ese mes
@@ -1531,7 +1777,7 @@ function pintarAvisos(){
     if (w === 0 || w === 6) continue;
     const nom = festivoDe(a, m, d);
     if (!nom) continue;
-    const enD = HOSP.filter(p => (hosp[p.nombre] || [])[d-1] === 'D').map(p => p.corto);
+    const enD = genteHosp.filter(n => (hosp[n] || [])[d-1] === 'D').map(n => cortoDe(n));
     if (enD.length)
       lista.push('Hospitalización, festivo del ' + d + ' (' + nom + '): ' + enD.join(', ') +
                  (enD.length === 1 ? ' está' : ' están') + ' en D, y el festivo solo lo cubren dos personas en FD (8 h)');
@@ -1552,8 +1798,8 @@ function pintarAvisos(){
 function render(){
   ctx = mesActual();
   guardar();
-  pintarTabla('tablaUrg',  URG_ROT.concat(URG_ALM).map(p => p.nombre), 'urg',  horasUrg);
-  pintarTabla('tablaHosp', HOSP.map(p => p.nombre),                     'hosp', horasHosp);
+  pintarTabla('tablaUrg',  nombresDe('urg'),  'urg',  horasUrg);
+  pintarTabla('tablaHosp', nombresDe('hosp'), 'hosp', horasHosp);
   pintarCuentas();
   pintarTotales();
   pintarFestivos();
@@ -1715,7 +1961,7 @@ const XLSXMIN = (() => {
       xf(9, 8, 1, centrado),     /* 12 T */
       xf(8, 7, 1, centrado),     /* 13 M */
       xf(10, 0, 1, centrado),    /* 14 vacio */
-      xf(3, 3, 2, izq),          /* 15 "COMPAÑERO" */
+      xf(3, 3, 2, izq),          /* 15 "AUTORIZADOR" */
       xf(12, 3, 1, centrado),    /* 16 leyenda codigo */
       xf(11, 0, 0, '<alignment horizontal="left" vertical="center" indent="1"/>'), /* 17 leyenda texto */
       xf(13, 10, 1, izq),        /* 18 total nombre */
@@ -1808,7 +2054,7 @@ const XLSXMIN = (() => {
       agregar('<row r="' + r + '" ht="17" customHeight="1">' + celda('A' + r, EST.subtitulo, b.titulo) + '</row>');
       comb.push('A' + r + ':AG' + r); r++;
       /* cabecera de dias */
-      let cab = celda('A' + r, EST.cabNombre, 'COMPAÑERO');
+      let cab = celda('A' + r, EST.cabNombre, 'AUTORIZADOR');
       for (let d = 1; d <= 31; d++){
         const ref = LETRA(1 + d) + r;
         if (d <= dias){
@@ -1932,10 +2178,10 @@ function descargarExcel(){
   const d = estado[k];
   const mes = MESES[m-1];
   /* en el Excel el nombre va completo, con tildes y con la primera letra de cada palabra en mayúscula */
-  const personasUrg = URG_ROT.concat(URG_ALM).map(p => ({
-    nombre: largoDe(p.nombre), codigos: d.urg[p.nombre], horas: horasUrg(d.urg[p.nombre]) }));
-  const personasHosp = HOSP.map(p => ({
-    nombre: largoDe(p.nombre), codigos: d.hosp[p.nombre], horas: horasHosp(d.hosp[p.nombre]) }));
+  const personasUrg = nombresDe('urg').map(n => ({
+    nombre: largoDe(n), codigos: d.urg[n] || [], horas: horasUrg(d.urg[n] || []) }));
+  const personasHosp = nombresDe('hosp').map(n => ({
+    nombre: largoDe(n), codigos: d.hosp[n] || [], horas: horasHosp(d.hosp[n] || []) }));
   /* el logo que ya está en la página, para que salga arriba del cuadro */
   const imgLogo = document.querySelector('header.top .logo, .entrada-logo');
   const logo = imgLogo && imgLogo.src.indexOf('base64,') > 0 ? imgLogo.src.split('base64,')[1] : null;
@@ -2202,6 +2448,9 @@ function mensajeEntrada(t, malo){
 }
 /* Pide la entrada: oculta el cuadro y muestra la pantalla del administrador. */
 function pedirEntrada(mensaje){
+  /* si se venció la sesión con el panel abierto, el panel se cierra */
+  const panelAut = document.getElementById('autCapa');
+  if (panelAut) panelAut.hidden = true;
   const capa = document.getElementById('entrada');
   if (capa) capa.hidden = false;
   document.body.classList.add('bloqueado');
@@ -2247,10 +2496,12 @@ async function entrarDesdePantalla(){
   if (boton) boton.disabled = false;
   try { await traerDeNube(true); }
   catch (e) { mensajeSb('Ya entraste, pero no pude traer los datos: ' + e.message, true); }
+  try { await traerAutNube(); } catch (e) {}
 }
 
 /* ---- Arranque: si la sesión está recordada entra solo; si no, pide la entrada ---- */
 async function arrancar(){
+  cargarAut();                 /* la lista de autorizadores, antes de pintar nada */
   cargarSb();
   if (!sbConfigurado()){ pedirEntrada('Falta la dirección del proyecto en este navegador.'); return; }
   if (sbConSesion() || sb.refresco){
@@ -2258,11 +2509,301 @@ async function arrancar(){
       if (!sbConSesion()) await sbRefrescar();     /* renueva la sesión guardada en este equipo */
       entrarAlCuadro();
       traerDeNube(true);
+      traerAutNube();
       return;
     } catch (e) { /* la sesión guardada ya no sirve: se pide otra vez */ }
   }
   pedirEntrada();
 }
+
+/* ============================================================
+   PANEL DE AUTORIZADORES
+   ============================================================ */
+/* para los atributos del panel: un nombre con comillas no puede romper el HTML */
+function escAttr(t){
+  return String(t == null ? '' : t).replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+    .replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function autMsg(t, malo){
+  const el = document.getElementById('autMsg');
+  if (!el) return;
+  el.textContent = t || '';
+  el.style.color = malo ? '#b3261e' : '#24684a';
+}
+function autCapa(){ return document.getElementById('autCapa'); }
+
+/* Cuántos días de FD lleva cada uno en el mes que se está viendo (para el resumen
+   del panel, sin entrar en el detalle). */
+function pintarAut(){
+  const cuerpo = document.getElementById('autFilas');
+  if (!cuerpo) return;
+  const orden = AUT.slice().sort((x, y) => (x.orden - y.orden) ||
+    String(x.corto).localeCompare(String(y.corto), 'es'));
+  const filas = [];
+  for (const p of orden){
+    const tiene = g => (p.cuadros || []).indexOf(g) >= 0 ? ' checked' : '';
+    const marcas = [];
+    if (p.noFD) marcas.push('nunca FD');
+    if (p.soloSemanaHasta) marcas.push('solo semana hasta ' + p.soloSemanaHasta);
+    filas.push('<tr class="' + (p.activo ? '' : 'off') + '">' +
+      '<td class="izq"><span class="quien">' + escAttr(p.corto) + '</span>' +
+        '<span class="full" title="' + escAttr(p.titulo) + '">' + escAttr(p.titulo) + '</span>' +
+        (marcas.length ? '<span class="marca">' + marcas.join(' · ') + '</span>' : '') + '</td>' +
+      '<td><input type="checkbox" data-aut="' + escAttr(p.nombre) + '" data-campo="activo"' + (p.activo ? ' checked' : '') + '></td>' +
+      '<td><input type="checkbox" data-aut="' + escAttr(p.nombre) + '" data-campo="urg_rot"' + tiene('urg_rot') + '></td>' +
+      '<td><input type="checkbox" data-aut="' + escAttr(p.nombre) + '" data-campo="urg_alm"' + tiene('urg_alm') + '></td>' +
+      '<td><input type="checkbox" data-aut="' + escAttr(p.nombre) + '" data-campo="hosp"' + tiene('hosp') + '></td>' +
+      '<td><input type="checkbox" data-aut="' + escAttr(p.nombre) + '" data-campo="noFD"' + (p.noFD ? ' checked' : '') + '></td>' +
+      '<td>' + (tieneDatos(p.nombre) ? '' : '<button class="quitar" data-quitar="' + escAttr(p.nombre) + '">Quitar</button>') +
+      '</td></tr>');
+  }
+  cuerpo.innerHTML = filas.join('');
+
+  /* el aviso del ciclo de urgencias */
+  const nU = URG_ROT.length;
+  document.getElementById('autAviso').innerHTML = (nU !== 4)
+    ? '<p class="aviso-aut"><strong>Urgencias: ' + nU + ' activo' + (nU === 1 ? '' : 's') +
+      ' en el ciclo.</strong> El ciclo N → n → L → D está hecho para 4, porque cada día tiene que haber ' +
+      '1 de día y 1 de noche. Con ' + nU + ' los turnos se pisan o se quedan sin cubrir. Deja 4 marcados ' +
+      'en «Urg. ciclo»; al que sobre se le puede marcar solo almuerzo u hospitalización, o darle turnos a mano ' +
+      'en el cuadro.</p>'
+    : '';
+
+  /* el estado de la lista en la nube */
+  const pie = document.getElementById('autPie');
+  if (pie){
+    pie.textContent = autNube.estado === 'ok' ? 'La lista está guardada en Supabase: todos los equipos ven los mismos activos.'
+      : autNube.estado === 'guardando' ? 'Guardando la lista…'
+      : autNube.estado === 'error' ? 'La lista quedó solo en este navegador' + (autNube.msg ? ' (' + autNube.msg + ')' : '') +
+          '. Si la tabla todavía no existe, se crea con el SQL de abajo.'
+      : autNube.estado === 'sinsesion' ? 'La lista se está guardando solo en este navegador (no hay sesión con Supabase).'
+      : 'La lista se guarda en este navegador.';
+  }
+}
+function abrirAut(){
+  const sql = document.getElementById('autSql');
+  if (sql && !sql.textContent) sql.textContent = AUT_SQL;
+  pintarAut();
+  const c = autCapa();
+  if (c) c.hidden = false;
+}
+function cerrarAut(){
+  const c = autCapa();
+  if (c) c.hidden = true;
+}
+
+/* La lista se guarda en el navegador y, si hay sesión, también en Supabase. */
+let autNube = { estado: 'local', msg: '' };
+let autTemporizador = null;
+function programarAutNube(){
+  clearTimeout(autTemporizador);
+  autTemporizador = setTimeout(function(){ guardarAutNube(); }, 900);
+}
+async function guardarAutNube(){
+  if (!sbConfigurado()){ autNube = {estado: 'local', msg: ''}; pintarAut(); return; }
+  if (!sbConSesion()){ autNube = {estado: 'sinsesion', msg: ''}; pintarAut(); return; }
+  autNube = {estado: 'guardando', msg: ''}; pintarAut();
+  try {
+    const cab = await sbCabeceras();
+    const filas = AUT.map(p => ({
+      nombre: p.nombre, corto: p.corto, titulo: p.titulo,
+      cuadros: (p.cuadros || []).join(','), activo: !!p.activo, no_fd: !!p.noFD,
+      solo_semana_hasta: p.soloSemanaHasta || null, orden: p.orden || 0,
+      pos: JSON.stringify(p.pos || {}),
+      actualizado: new Date().toISOString()
+    }));
+    const r = await fetch(sb.url + '/rest/v1/' + AUT_TABLA + '?on_conflict=nombre', {
+      method: 'POST',
+      headers: Object.assign({}, cab, { 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
+      body: JSON.stringify(filas)
+    });
+    if (!r.ok){
+      const t = await r.text().catch(function(){ return ''; });
+      throw new Error(r.status === 404 ? 'la tabla no existe' : ('respuesta ' + r.status + (t ? ': ' + t.slice(0, 90) : '')));
+    }
+    autNube = {estado: 'ok', msg: ''};
+  } catch(e){
+    autNube = {estado: 'error', msg: e.message};
+  }
+  pintarAut();
+}
+/* Al entrar, si la tabla existe y tiene filas, manda la de la nube (así todos los
+   equipos ven lo mismo). Si no existe o está vacía, se queda la de este navegador. */
+async function traerAutNube(){
+  if (!sbConfigurado() || !sbConSesion()){ return; }
+  try {
+    const cab = await sbCabeceras();
+    const r = await fetch(sb.url + '/rest/v1/' + AUT_TABLA +
+      '?select=nombre,corto,titulo,cuadros,activo,no_fd,solo_semana_hasta,orden,pos&order=orden', { headers: cab });
+    if (r.status === 404){ autNube = {estado: 'error', msg: 'la tabla no existe'}; pintarAut(); return; }
+    if (!r.ok) throw new Error('respuesta ' + r.status);
+    const filas = await r.json();
+    if (Array.isArray(filas) && filas.length){
+      AUT = filas.map((f, i) => ({
+        nombre: f.nombre,
+        corto: f.corto || nombreTitulo(f.nombre),
+        titulo: f.titulo || nombreTitulo(f.nombre),
+        cuadros: String(f.cuadros || '').split(',').filter(Boolean),
+        activo: f.activo !== false,
+        noFD: !!f.no_fd,
+        soloSemanaHasta: f.solo_semana_hasta || '',
+        pos: {},
+        orden: f.orden || i + 1
+      }));
+      /* El puesto en cada cuadro viene guardado en 'pos'. Si la tabla es de una
+         versión anterior y no lo trae, se saca del orden en que llegan las filas. */
+      let hayPos = false;
+      filas.forEach((f, i) => {
+        let pos = {};
+        try { pos = JSON.parse(f.pos || '{}') || {}; } catch(e){ pos = {}; }
+        if (Object.keys(pos).length){ hayPos = true; AUT[i].pos = pos; }
+      });
+      if (!hayPos)
+        for (const g of ['urg_rot','urg_alm','hosp']){
+          let n = 0;
+          for (const p of AUT) if ((p.cuadros || []).indexOf(g) >= 0) p.pos[g] = ++n;
+        }
+      refrescarListas();
+      guardarAut();
+      autNube = {estado: 'ok', msg: ''};
+      if (ctx) render(); else pintarAut();
+    } else {
+      autNube = {estado: 'local', msg: ''};
+    }
+  } catch(e){
+    autNube = {estado: 'error', msg: e.message};
+  }
+  pintarAut();
+}
+
+function autRefrescarTodo(){
+  refrescarListas();
+  guardarAut();
+  programarAutNube();
+  render();
+  pintarAut();
+}
+
+function aplicarCambioAut(nombre, campo, valor){
+  const p = autDe(nombre);
+  if (!p) return;
+  if (campo === 'activo') p.activo = valor;
+  else if (campo === 'noFD') p.noFD = valor;
+  else {
+    const i = (p.cuadros || []).indexOf(campo);
+    if (valor && i < 0) p.cuadros.push(campo);
+    if (!valor && i >= 0) p.cuadros.splice(i, 1);
+    if (valor && p.pos[campo] == null){
+      let n = 0;
+      for (const q of AUT) if (q !== p && (q.cuadros || []).indexOf(campo) >= 0) n++;
+      p.pos[campo] = n + 1;
+    }
+  }
+
+  /* Si se inactiva y tenía turnos en el mes que está abierto, se pregunta si se le
+     quitan: si se dejan, el mes queda con esos turnos puestos y la fila sale en gris
+     al final (histórico). Los meses anteriores nunca se tocan. */
+  if (campo === 'activo' && !valor && ctx){
+    const k = ctx.k;
+    const tiene = ['urg','hosp'].some(sec => ((estado[k] && estado[k][sec] && estado[k][sec][p.nombre]) || []).some(c => c && c !== '.'));
+    if (tiene && confirm('¿Le quito también los turnos de ' + MESES[ctx.m-1] + ' a ' + p.corto + '?\n\n' +
+        'Aceptar: se vacía su fila de ' + MESES[ctx.m-1] + ' (los meses anteriores no se tocan).\n' +
+        'Cancelar: los turnos se quedan guardados y la fila sale en gris al final del cuadro.')){
+      for (const sec of ['urg','hosp'])
+        if (estado[k] && estado[k][sec] && estado[k][sec][p.nombre])
+          estado[k][sec][p.nombre] = new Array(ctx.dias).fill('');
+      guardar();
+    }
+  }
+  autRefrescarTodo();
+}
+
+/* mayúsculas, sin espacios de más: así queda la llave que se guarda */
+function normalizaNombre(t){
+  return String(t || '').toUpperCase().replace(/\s+/g, ' ').trim();
+}
+/* "María Fernanda Calderón Bohórquez" -> "María F. Calderón" */
+function cortoDeNombreLargo(titulo){
+  const w = String(titulo || '').trim().split(/\s+/).filter(Boolean);
+  if (!w.length) return '';
+  if (w.length === 1) return w[0];
+  const inicial = w[1].charAt(0).toLocaleUpperCase('es-ES');
+  if (w.length === 2) return w[0] + ' ' + w[1];
+  return w[0] + ' ' + inicial + '. ' + w[2];
+}
+
+function agregarAut(){
+  const bruto = (document.getElementById('autNombre').value || '').trim();
+  if (bruto.length < 4){ autMsg('Escribe el nombre completo del autorizador.', true); return; }
+  const nombre = normalizaNombre(bruto);
+  if (nombre.split(' ').length < 2){ autMsg('Escribe nombre y apellido, como está en nómina.', true); return; }
+  if (autDe(nombre)){ autMsg('Ese autorizador ya está en la lista.', true); return; }
+
+  const cuadros = [];
+  if (document.getElementById('autUrg').checked)  cuadros.push('urg_rot');
+  if (document.getElementById('autAlm').checked)  cuadros.push('urg_alm');
+  if (document.getElementById('autHosp').checked) cuadros.push('hosp');
+  if (!cuadros.length){ autMsg('Marca al menos un cuadro: urgencias, almuerzo u hospitalización.', true); return; }
+
+  const titulo = nombreTitulo(nombre);
+  const p = {
+    nombre: nombre,
+    corto: cortoDeNombreLargo(titulo),
+    titulo: titulo,
+    cuadros: cuadros,
+    activo: true,
+    noFD: document.getElementById('autSinFD').checked,
+    soloSemanaHasta: '',
+    pos: {},
+    orden: AUT.reduce((s, x) => Math.max(s, x.orden || 0), 0) + 1
+  };
+  for (const g of cuadros){
+    let n = 0;
+    for (const q of AUT) if ((q.cuadros || []).indexOf(g) >= 0) n++;
+    p.pos[g] = n + 1;
+  }
+  AUT.push(p);
+  document.getElementById('autNombre').value = '';
+  document.getElementById('autSinFD').checked = false;
+  autRefrescarTodo();
+  autMsg('Agregado: ' + p.corto + '. Su fila entra vacía; con «Armar el mes» se reparte con los demás, o le pones los turnos a mano en el cuadro.');
+}
+
+function quitarAut(nombre){
+  const p = autDe(nombre);
+  if (!p) return;
+  if (tieneDatos(nombre)){
+    autMsg('No se puede quitar: ' + p.corto + ' tiene turnos guardados. Inactívalo y queda el histórico.', true);
+    return;
+  }
+  if (!confirm('¿Quitar a ' + p.corto + ' de la lista de autorizadores? No tiene turnos guardados.')) return;
+  AUT = AUT.filter(x => x.nombre !== nombre);
+  autRefrescarTodo();
+  autMsg('Quitado: ' + p.corto + '.');
+}
+
+/* El SQL para crear la tabla de la lista (se pega una sola vez en Supabase). */
+const AUT_SQL = [
+  'create table if not exists public.autorizadores (',
+  '  nombre text primary key,',
+  '  corto text,',
+  '  titulo text,',
+  '  cuadros text default \'\',',
+  '  activo boolean default true,',
+  '  no_fd boolean default false,',
+  '  solo_semana_hasta text,',
+  '  orden int default 0,',
+  '  pos text default \'{}\',',
+  '  actualizado timestamptz default now()',
+  ');',
+  'alter table public.autorizadores enable row level security;',
+  'drop policy if exists aut_sel on public.autorizadores;',
+  'drop policy if exists aut_ins on public.autorizadores;',
+  'drop policy if exists aut_upd on public.autorizadores;',
+  'create policy aut_sel on public.autorizadores for select to authenticated using (true);',
+  'create policy aut_ins on public.autorizadores for insert to authenticated with check (true);',
+  'create policy aut_upd on public.autorizadores for update to authenticated using (true) with check (true);'
+].join('\n');
 
 /* ============================================================
    BOTONES
@@ -2295,6 +2836,30 @@ $('#btnLimpiar').addEventListener('click', () => {
 $('#btnImprimir').addEventListener('click', () => window.print());
 
 $('#btnExcel').addEventListener('click', descargarExcel);
+
+/* ---- panel de Autorizadores ---- */
+$('#btnAut').addEventListener('click', abrirAut);
+$('#autCerrar').addEventListener('click', cerrarAut);
+$('#autCapa').addEventListener('click', e => { if (e.target === autCapa()) cerrarAut(); });
+$('#autAgregar').addEventListener('click', agregarAut);
+$('#autNombre').addEventListener('keydown', ev => { if (ev.key === 'Enter') agregarAut(); });
+$('#autSubir').addEventListener('click', async function(){
+  autNube = {estado: 'guardando', msg: ''}; pintarAut();
+  await guardarAutNube();
+});
+$('#autFilas').addEventListener('change', ev => {
+  const cb = ev.target.closest('input[data-aut]');
+  if (!cb) return;
+  aplicarCambioAut(cb.dataset.aut, cb.dataset.campo, cb.checked);
+});
+$('#autFilas').addEventListener('click', ev => {
+  const b = ev.target.closest('button[data-quitar]');
+  if (!b) return;
+  quitarAut(b.dataset.quitar);
+});
+document.addEventListener('keydown', ev => {
+  if (ev.key === 'Escape' && !autCapa().hidden) cerrarAut();
+});
 
 /* ============================================================
    ARRANCAR
