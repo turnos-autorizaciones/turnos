@@ -213,6 +213,11 @@ td.horas small{display:block;font-size:var(--fs-xs);font-weight:400;color:var(--
 .aut pre{white-space:pre-wrap;font-size:10.5px;line-height:1.45;background:var(--pd);color:#dce6f2;
   padding:10px 12px;border-radius:8px;margin:10px 0 0;max-height:220px;overflow:auto}
 .aut .pie-lista{font-size:11px;color:var(--mut);margin:12px 0 0;line-height:1.5}
+.aut-op{font:inherit;font-size:12px;padding:5px 10px;margin:6px 6px 0 0;border-radius:8px;
+  border:1px solid var(--pd);background:var(--pd);color:#fff;cursor:pointer}
+.aut-op em{font-style:normal;opacity:.75;font-size:11px}
+.aut-op.sec{background:#fff;color:var(--pd);border-color:var(--line)}
+.aut-op:hover{filter:brightness(1.06)}
 tr.hist td{opacity:.62}
 tr.hist td.nombre{font-style:italic}
 /* en pantalla chica el panel se aprieta: se cae el nombre completo (queda en el
@@ -389,6 +394,7 @@ var SB_CUENTA = 'autorizacioneshospitalarias@hospitalsanjose.gov.co';   /* solo 
       <button class="aut-cerrar" id="autCerrar" title="Cerrar" aria-label="Cerrar">&times;</button>
     </div>
     <div id="autAviso"></div>
+    <div id="autPregunta"></div>
     <div class="tabla-scroll">
       <table>
         <thead>
@@ -431,9 +437,10 @@ var SB_CUENTA = 'autorizacioneshospitalarias@hospitalsanjose.gov.co';   /* solo 
       1 de día y 1 de noche cada día): está hecho para <strong>4 activos</strong>. «Almuerzo» reparte las ½ h entre
       semana —lunes al primero de la lista, martes al segundo, y así—; si hay menos de cinco, la rueda se repite.
       «Hosp.» es el cuadro de 8 h. «Nunca FD» es para quien no hace fines de semana ni festivos (la monitora):
-      no entra al reparto de FD y solo queda en D entre semana. Un autorizador que se inactiva y tenía turnos
-      guardados en el mes que estás viendo sigue apareciendo en gris, al final del cuadro, para no perder el
-      histórico; en los meses siguientes ya no sale.
+      no entra al reparto de FD y solo queda en D entre semana.
+      <strong>«Activo» es del mes que estás viendo.</strong> Al destildarlo te pregunta hasta cuándo trabaja: si dices
+      «hasta octubre», sigue saliendo normal en octubre y desde noviembre ya no está. Lo que ya trabajó no se toca.
+      Un autorizador nuevo «entra desde» el mes en que lo agregas, así que no aparece en los meses anteriores.
     </p>
 
     <details id="autSqlCaja">
@@ -485,8 +492,9 @@ const AUT_BASE = [
   {nombre:'YAMILETH BERMÚDEZ GOMEZ (Monitor)', corto:'Yamileth Bermúdez (monitora)', titulo:'Yamileth Bermúdez Gómez (Monitor)', cuadros:['hosp'], pos:{hosp:7}, orden:11, noFD:true}
 ];
 
-/* Estas tres listas son las que usa todo el cuadro (pintar, generar, totales,
-   Excel). No se escriben a mano: salen de AUT, solo con los activos. */
+/* Espejo de las listas del mes que se está viendo. No se escriben a mano: salen de
+   AUT con enMes(). El cuadro, los totales, los avisos y el Excel piden su lista con
+   personasMes(grupo, a, m); estas tres quedan para consultar rápido y para las pruebas. */
 let AUT = [];
 let URG_ROT = [], URG_ALM = [], HOSP = [];
 
@@ -503,6 +511,8 @@ function autCopia(x){
     titulo: x.titulo || nombreTitulo(x.nombre || ''),
     cuadros: (x.cuadros || []).slice(),
     activo: x.activo !== false,
+    altaDesde: x.altaDesde || '',
+    bajaDesde: x.bajaDesde || '',
     noFD: !!x.noFD,
     soloSemanaHasta: x.soloSemanaHasta || '',
     pos: Object.assign({}, x.pos || {}),
@@ -519,20 +529,46 @@ function cargarAut(){
 function guardarAut(){
   try { localStorage.setItem(AUT_KEY, JSON.stringify(AUT)); } catch(e){}
 }
-/* Vuelve a armar URG_ROT, URG_ALM y HOSP con los activos, cada uno en su puesto. */
-function refrescarListas(){
-  const puesto = (x, g) => (x.pos && x.pos[g] != null) ? x.pos[g] : (x.orden || 99);
-  const en = g => AUT.filter(x => x.activo && (x.cuadros || []).indexOf(g) >= 0)
-                    .sort((x, y) => (puesto(x, g) - puesto(y, g)) || String(x.corto).localeCompare(String(y.corto), 'es'));
-  URG_ROT = en('urg_rot');
-  URG_ALM = en('urg_alm');
-  HOSP    = en('hosp');
+/* ¿está en el cuadro en el mes (a,m)? Una baja por mes ('bajaDesde') manda sobre
+   el interruptor: quien trabaja hasta octubre sigue en octubre y ya no está en
+   noviembre. Sin fecha de baja, manda el interruptor 'activo'. */
+function enMes(p, a, m){
+  if (!p) return false;
+  const k = claveMes(a, m);
+  if (p.bajaDesde && k >= p.bajaDesde) return false;   /* ya no está desde ese mes */
+  if (p.altaDesde && k <  p.altaDesde) return false;   /* todavía no había entrado */
+  if (!p.activo && !p.bajaDesde) return false;         /* se quitó de la lista */
+  return true;
+}
+/* El puesto en cada cuadro. */
+function puestoDe(x, g){ return (x.pos && x.pos[g] != null) ? x.pos[g] : (x.orden || 99); }
+/* Los que están en un cuadro en el mes (a,m), en su puesto. */
+function personasMes(grupo, a, m){
+  const A = (a == null) ? ((ctx && ctx.a) || PISO.a) : a;
+  const M = (m == null) ? ((ctx && ctx.m) || PISO.m) : m;
+  return AUT.filter(x => enMes(x, A, M) && (x.cuadros || []).indexOf(grupo) >= 0)
+            .sort((x, y) => (puestoDe(x, grupo) - puestoDe(y, grupo)) ||
+              String(x.corto).localeCompare(String(y.corto), 'es'));
+}
+/* Los nombres de un cuadro, sin repetir (alguien puede estar en ciclo y almuerzo). */
+function nombresDeGrupos(grupos, a, m){
+  const nombres = [], vistos = {};
+  for (const g of grupos)
+    for (const p of personasMes(g, a, m))
+      if (!vistos[p.nombre]){ vistos[p.nombre] = true; nombres.push(p.nombre); }
+  return nombres;
+}
+/* Vuelve a armar el espejo URG_ROT, URG_ALM y HOSP con los que están en el mes. */
+function refrescarListas(a, m){
+  URG_ROT = personasMes('urg_rot', a, m);
+  URG_ALM = personasMes('urg_alm', a, m);
+  HOSP    = personasMes('hosp', a, m);
 }
 function autDe(nombre){
   for (const x of AUT) if (x.nombre === nombre) return x;
   return null;
 }
-function autActivo(nombre){ const p = autDe(nombre); return p ? !!p.activo : true; }
+function autActivo(nombre){ const p = autDe(nombre); return p ? enMes(p, (ctx && ctx.a) || PISO.a, (ctx && ctx.m) || PISO.m) : true; }
 /* ¿este autorizador no hace fines de semana ni festivos? (la monitora) */
 function autNoFD(p){
   const a = p ? autDe(p.nombre) : null;
@@ -546,11 +582,13 @@ function soloSemana(nombre, a, m){
   if (!(t[0] >= 1900 && t[1] >= 1 && t[1] <= 12)) return false;
   return (a < t[0]) || (a === t[0] && m <= t[1]);
 }
-/* ¿sigue en el cuadro hoy? (activo y metido en ese cuadro) */
-function enCuadroHoy(nombre, sec){
+/* ¿sigue en ese cuadro en el mes (a,m)? (activo ese mes y metido en el cuadro) */
+function enCuadroMes(nombre, sec, a, m){
   const p = autDe(nombre);
   if (!p) return true;
-  if (!p.activo) return false;
+  const A = (a == null) ? ((ctx && ctx.a) || PISO.a) : a;
+  const M = (m == null) ? ((ctx && ctx.m) || PISO.m) : m;
+  if (!enMes(p, A, M)) return false;
   const grupos = (sec === 'urg') ? ['urg_rot','urg_alm'] : ['hosp'];
   return grupos.some(g => (p.cuadros || []).indexOf(g) >= 0);
 }
@@ -754,7 +792,9 @@ const fmt = n => (Math.round(n*100)/100).toString().replace('.', ',');
    ============================================================ */
 function generarUrgencias(a,m){
   const dias = diasDelMes(a,m), res = {};
-  URG_ROT.forEach((p,i)=>{
+  /* el ciclo lo forman los que están ese mes, en su puesto */
+  const ciclo = personasMes('urg_rot', a, m);
+  ciclo.forEach((p,i)=>{
     const fila = [];
     for (let d=1; d<=dias; d++){
       const fecha = new Date(a, m-1, d);
@@ -776,13 +816,14 @@ function generarUrgencias(a,m){
    de cinco, los últimos no alcanzan día: se les pone a mano. */
 function generarAlmuerzos(a, m){
   const dias = diasDelMes(a, m), res = {};
-  URG_ALM.forEach(p => res[p.nombre] = new Array(dias).fill(''));
-  if (!URG_ALM.length) return res;
+  const alm = personasMes('urg_alm', a, m);
+  alm.forEach(p => res[p.nombre] = new Array(dias).fill(''));
+  if (!alm.length) return res;
   for (let d = 1; d <= dias; d++){
     const w = new Date(a, m-1, d).getDay();
     if (w === 0 || w === 6) continue;
-    const puesto = (w - 1) % URG_ALM.length;
-    res[URG_ALM[puesto].nombre][d-1] = 'd';
+    const puesto = (w - 1) % alm.length;
+    res[alm[puesto].nombre][d-1] = 'd';
   }
   return res;
 }
@@ -854,25 +895,27 @@ function turnosDe(a, m){
 }
 /* quiénes cubrieron el último turno del mes (el último fin de semana o el último festivo).
    La monitora nunca entra: no hace fines de semana ni festivos. */
-function ultimoTurnoDe(fila, a, m){
+function ultimoTurnoDe(fila, a, m, nombres){
   const t = turnosDe(a, m);
   if (!t.length || !fila) return [];
   const u = t[t.length - 1];
-  return HOSP.filter(p => !autNoFD(p))
-             .filter(p => u.dias.some(d => (fila[p.nombre] || [])[d-1] === 'FD')).map(p => p.nombre);
+  const lista = nombres || personasMes('hosp', a, m).map(p => p.nombre);
+  return lista.filter(n => !autNoFD({nombre: n}))
+              .filter(n => u.dias.some(d => (fila[n] || [])[d-1] === 'FD'));
 }
 /* Quiénes hicieron FD el sábado del último fin de semana del mes, para pasar al mes
    siguiente el fin de semana que queda partido: si el mes termina en sábado, el
    domingo pasa al mes siguiente; si termina en domingo, el fin de semana entero ya
    está en el mes, pero el lunes festivo que lo sigue también va con esos dos. */
-function ultimoDiaFD(fila, a, m){
+function ultimoDiaFD(fila, a, m, nombres){
   const dias = diasDelMes(a, m), f2 = fila || {};
   const w = new Date(a, m-1, dias).getDay();
   const sab = (w === 6) ? dias : (w === 0) ? dias - 1 : 0;
   if (!sab) return [];
   /* quien no hace fines de semana ni festivos queda por fuera */
-  return HOSP.filter(p => !autNoFD(p))
-             .filter(p => (f2[p.nombre] || [])[sab-1] === 'FD').map(p => p.nombre);
+  const lista = nombres || personasMes('hosp', a, m).map(p => p.nombre);
+  return lista.filter(n => !autNoFD({nombre: n}))
+              .filter(n => (f2[n] || [])[sab-1] === 'FD');
 }
 /* Quiénes hicieron un turno de tres días (sábado, domingo y lunes festivo) que
    arranca en el mes (a,m). Es la base de la regla de no repetir: esos dos no
@@ -880,14 +923,15 @@ function ultimoDiaFD(fila, a, m){
    OJO: el turno de tres días que queda partido entre dos meses (sábado del mes
    que termina, domingo y lunes festivo del que empieza) aquí no aparece, porque
    en el cuadro del mes solo está el sábado; ese caso lo cubre ultimoDiaFD(). */
-function trioDeMes(fila, a, m){
+function trioDeMes(fila, a, m, nombres){
   const res = [];
   if (!fila) return res;
+  const lista = nombres || personasMes('hosp', a, m).map(p => p.nombre);
   for (const t of turnosDe(a, m)){
     if (t.dias.length <= 2) continue;
-    for (const p of HOSP){
-      if (autNoFD(p) || res.indexOf(p.nombre) >= 0) continue;
-      if (t.dias.some(d => (fila[p.nombre] || [])[d-1] === 'FD')) res.push(p.nombre);
+    for (const n of lista){
+      if (autNoFD({nombre: n}) || res.indexOf(n) >= 0) continue;
+      if (t.dias.some(d => (fila[n] || [])[d-1] === 'FD')) res.push(n);
     }
   }
   return res;
@@ -921,35 +965,45 @@ function copiaFD(x){
   const conteo = {};
   for (const n in x.conteo) conteo[n] = x.conteo[n];
   return {conteo: conteo, cierre: x.cierre.slice(), cierreDia: x.cierreDia.slice(),
-          trioAntes: (x.trioAntes || []).slice()};
+          trioAntes: (x.trioAntes || []).slice(), bajaron: (x.bajaron || []).slice()};
 }
 function contextoFD(a, m){
   const k = claveMes(a, m);
-  const cero = () => { const c = {}; HOSP.forEach(p => c[p.nombre] = 0); return c; };
+  /* la cuenta es de los que están en hospitalización ese mes; el que se fue deja
+     de contar (lo suyo ya quedó en los meses donde trabajó) */
+  const nombres = personasMes('hosp', a, m).map(p => p.nombre);
+  const cero = () => { const c = {}; for (const n of nombres) c[n] = 0; return c; };
   /* El cuadro arranca en septiembre de 2026, así que aquí nunca llega un mes
      anterior: la cuenta de FD empieza en cero en septiembre y de ahí en adelante
      se va arrastrando lo que dejó el mes de antes. */
-  if (antesDelPiso(a, m)) return {conteo: cero(), cierre: [], cierreDia: [], trioAntes: []};
+  if (antesDelPiso(a, m)) return {conteo: cero(), cierre: [], cierreDia: [], trioAntes: [], bajaron: []};
   if (cacheFD[k]) return copiaFD(cacheFD[k]);
   const conteo = cero();
-  let cierre = [], cierreDia = [], trioAntes = [];
+  let cierre = [], cierreDia = [], trioAntes = [], bajaron = [];
   if (a !== FD_REF.a || m !== FD_REF.m){
     /* se arranca de lo que dejó el mes anterior */
     const ant  = mesAntes(a, m);
     const prev = contextoFD(ant.a, ant.m);
-    for (const p of HOSP) conteo[p.nombre] = prev.conteo[p.nombre] || 0;
+    for (const n of nombres) conteo[n] = prev.conteo[n] || 0;
     /* la cuenta para emparejar son los días de FD que llevó cada uno: los fines
        de semana y los festivos valen lo mismo (8 h cada día). */
     const fila = filaHospDeMes(ant.a, ant.m);
-    for (const p of HOSP) conteo[p.nombre] += (fila[p.nombre] || [])
+    for (const n of nombres) conteo[n] += (fila[n] || [])
       .filter(c => c === 'FD').length;
-    cierre    = ultimoTurnoDe(fila, ant.a, ant.m);
-    cierreDia = ultimoDiaFD(fila, ant.a, ant.m);
+    /* El arrastre del mes se queda solo con los que siguen en el cuadro: si uno de
+       los dos que cerraron el mes se fue, el que queda es el único que lo hereda
+       (y el cuadro lo avisa, porque el turno pide dos). */
+    cierre    = ultimoTurnoDe(fila, ant.a, ant.m, nombres);
+    cierreDia = ultimoDiaFD(fila, ant.a, ant.m, nombres);
+    /* quiénes cerraron el mes pasado y ya no están: si alguno se fue, el turno que
+       cruza el mes cambia de manos y eso no es un error del cuadro. */
+    const todos = Object.keys(fila || {});
+    bajaron = ultimoTurnoDe(fila, ant.a, ant.m, todos).filter(n => nombres.indexOf(n) < 0);
     /* los del turno de tres días del mes pasado: no repiten turno de tres días en
        este. Se saca de la fila que ya se tiene aquí, para no volver a armar el mes. */
-    trioAntes = trioDeMes(fila, ant.a, ant.m);
+    trioAntes = trioDeMes(fila, ant.a, ant.m, nombres);
   }
-  const res = {conteo: conteo, cierre: cierre, cierreDia: cierreDia, trioAntes: trioAntes};
+  const res = {conteo: conteo, cierre: cierre, cierreDia: cierreDia, trioAntes: trioAntes, bajaron: bajaron};
   cacheFD[k] = res;
   return copiaFD(res);
 }
@@ -958,14 +1012,16 @@ function olvidarFD(){ cacheFD = {}; }
 
 function generarHospitalizacion(a,m){
   const dias = diasDelMes(a,m), res = {};
-  HOSP.forEach(p => res[p.nombre] = new Array(dias).fill(''));
+  /* los que están en hospitalización ese mes, en su puesto */
+  const enHosp = personasMes('hosp', a, m);
+  enHosp.forEach(p => res[p.nombre] = new Array(dias).fill(''));
   /* Quedan por fuera del reparto de los fines de semana y los festivos los que no
      hacen FD (la monitora) y los que por ahora solo hacen de lunes a viernes
      (Angye en septiembre y octubre). El resto entra al reparto. */
-  const quien = HOSP.filter(p => !autNoFD(p) && !soloSemana(p.nombre, a, m));
+  const quien = enHosp.filter(p => !autNoFD(p) && !soloSemana(p.nombre, a, m));
 
   /* entre semana, cuando no es festivo: todos hacen D */
-  for (const p of HOSP)
+  for (const p of enHosp)
     for (let d=1; d<=dias; d++){
       const w = new Date(a,m-1,d).getDay();
       if (w!==0 && w!==6 && !esFestivo(a, m, d)) res[p.nombre][d-1] = 'D';
@@ -1378,7 +1434,7 @@ function prepararMes(a, m){
        a armar porque es el punto de partida—, se le crea la fila sin tocar las
        demás: D de lunes a viernes, y libre fines de semana y festivos. */
     if (estado[k] && estado[k].hosp && ya === a && mm === m){
-      for (const p of HOSP){
+      for (const p of personasMes('hosp', ya, mm)){
         if (estado[k].hosp[p.nombre]) continue;
         /* La monitora y quien por ahora solo hace semana entran con su fila de
            lunes a viernes. A los demás se les deja la fila vacía: nadie inventa
@@ -1445,9 +1501,9 @@ function mesActual(){
   if (estado[k]){
     if (!estado[k].urg)  estado[k].urg  = {};
     if (!estado[k].hosp) estado[k].hosp = {};
-    for (const p of URG_ROT.concat(URG_ALM))
-      if (!estado[k].urg[p.nombre]) estado[k].urg[p.nombre] = new Array(dias).fill('');
-    for (const p of HOSP)
+    for (const n of nombresDeGrupos(['urg_rot','urg_alm'], a, m))
+      if (!estado[k].urg[n]) estado[k].urg[n] = new Array(dias).fill('');
+    for (const p of personasMes('hosp', a, m))
       if (!estado[k].hosp[p.nombre]) estado[k].hosp[p.nombre] = new Array(dias).fill('');
   }
   for (const sec of ['urg','hosp']){
@@ -1475,12 +1531,14 @@ function largoDe(nombre){
    (el histórico), para no perder lo que se trabajó. */
 function nombresDe(sec){
   const filas = (estado[ctx.k] && estado[ctx.k][sec]) || {};
-  const base = (sec === 'urg') ? URG_ROT.concat(URG_ALM) : HOSP;
-  const nombres = base.map(p => p.nombre);
+  const base = (sec === 'urg') ? nombresDeGrupos(['urg_rot','urg_alm'], ctx.a, ctx.m)
+                              : personasMes('hosp', ctx.a, ctx.m).map(p => p.nombre);
+  const nombres = base.slice();
   for (const n of Object.keys(filas))
     if (nombres.indexOf(n) < 0 && (filas[n] || []).some(c => c && c !== '.')) nombres.push(n);
-  /* los del histórico quedan al final, en el orden en que ya venían */
-  return nombres.slice().sort((x, y) => (enCuadroHoy(x, sec) ? 0 : 1) - (enCuadroHoy(y, sec) ? 0 : 1));
+  /* los de meses en que ya no estaban quedan al final, en el orden en que venían */
+  return nombres.slice().sort((x, y) =>
+    (enCuadroMes(x, sec) ? 0 : 1) - (enCuadroMes(y, sec) ? 0 : 1));
 }
 /* Nombre completo para el Excel: la primera letra de cada palabra en mayúscula y el resto en minúscula.
    Ej.: MARIA FERNANDA CALDERON BOHORQUEZ -> Maria Fernanda Calderon Bohorquez */
@@ -1504,7 +1562,7 @@ function pintarTabla(id, nombres, seccion, fnHoras){
   const filas = [];
   for (const n of nombres){
     const fila = estado[ctx.k][seccion][n] || [];
-    const hist = !enCuadroHoy(n, seccion);
+    const hist = !enCuadroMes(n, seccion);
     const celdas = ['<td class="nombre" title="' + largoDe(n) + (hist ? ' · ya no está activo' : '') +
       '">' + cortoDe(n) + '</td>'];
     for (let d = 1; d <= dias; d++){
@@ -1608,9 +1666,10 @@ function pintarAvisos(){
   const genteHosp = nombresDe('hosp');
 
   /* 0. el ciclo de urgencias es de 4: con otro número, los turnos se pisan */
-  if (URG_ROT.length !== 4)
-    lista.push('Urgencias: hay ' + URG_ROT.length + ' activo' + (URG_ROT.length === 1 ? '' : 's') +
-               ' en el ciclo y el ciclo N → n → L → D está hecho para 4. Con ' + URG_ROT.length +
+  const cicloMes = personasMes('urg_rot', a, m);
+  if (cicloMes.length !== 4)
+    lista.push('Urgencias: hay ' + cicloMes.length + ' activo' + (cicloMes.length === 1 ? '' : 's') +
+               ' en el ciclo y el ciclo N → n → L → D está hecho para 4. Con ' + cicloMes.length +
                ' no cuadra el turno de día y de noche: deja 4 activos en «Urg. ciclo» (panel Autorizadores).');
 
   /* 1. cobertura: cada día 1 de día y 1 de noche */
@@ -1691,15 +1750,25 @@ function pintarAvisos(){
   if (arrastre.length){
     const etiqueta = 'Hospitalización, el fin de semana que viene del mes pasado (día ' + arrastre.join(' y ') + ')';
     const cubren = genteHosp.filter(n => !autNoFD({nombre: n}) && arrastre.some(d => (hosp[n] || [])[d-1] === 'FD'));
-    if (cubren.length !== 2)
-      lista.push(etiqueta + ': lo cubren ' + cubren.length + ' persona' + (cubren.length === 1 ? '' : 's') + ' (deberían ser 2)');
-    else
+    if (cubren.length < 2)
+      lista.push(etiqueta + ': lo cubren ' + cubren.length + ' persona' + (cubren.length === 1 ? '' : 's') +
+                 ' (deberían ser 2). Si uno de los dos que cerraron el mes ya no está, ponle FD en esos días al que vaya a cubrirlo.');
+    else if (cubren.length > 2)
+      lista.push(etiqueta + ': lo cubren ' + cubren.length + ' personas (deberían ser 2)');
+    else {
+      const seFueron = ctxFD.bajaron || [];
       for (const n of cubren){
-        if (ctxFD.cierre.indexOf(n) < 0)
+        if (ctxFD.cierre.indexOf(n) < 0 && !seFueron.length)
           lista.push(cortoDe(n) + ': quedó en el fin de semana que viene del mes pasado y no fue de los dos que lo hicieron allá (deben ser los mismos)');
         if (arrastre.some(d => (hosp[n] || [])[d-1] !== 'FD'))
           lista.push(cortoDe(n) + ': solo hizo una parte del fin de semana que viene del mes pasado (días ' + arrastre.join(', ') + '), y lo hacen los mismos dos todo el fin de semana');
       }
+      if (seFueron.length)
+        lista.push(etiqueta + ': lo cubren ' + cubren.map(n => cortoDe(n)).join(' y ') + '. ' +
+                   cortoDe(seFueron[0]) + ' cerró el mes pasado y ya no está en el cuadro, así que el turno cambió de manos' +
+                   (seFueron.length > 1 ? ' (se fueron ' + seFueron.length + ' de los dos)' : '') +
+                   '. Es solo en el cambio de mes.');
+    }
     const enD = genteHosp.filter(n => arrastre.some(d => (hosp[n] || [])[d-1] === 'D')).map(n => cortoDe(n));
     if (enD.length)
       lista.push(etiqueta + ': ' + enD.join(', ') + (enD.length === 1 ? ' está' : ' están') + ' en D, y ese día va en FD con los mismos dos del fin de semana');
@@ -1797,6 +1866,7 @@ function pintarAvisos(){
 
 function render(){
   ctx = mesActual();
+  refrescarListas(ctx.a, ctx.m);
   guardar();
   pintarTabla('tablaUrg',  nombresDe('urg'),  'urg',  horasUrg);
   pintarTabla('tablaHosp', nombresDe('hosp'), 'hosp', horasHosp);
@@ -2540,16 +2610,22 @@ function pintarAut(){
   const orden = AUT.slice().sort((x, y) => (x.orden - y.orden) ||
     String(x.corto).localeCompare(String(y.corto), 'es'));
   const filas = [];
+  const mesA = ctx ? ctx.a : PISO.a, mesM = ctx ? ctx.m : PISO.m;
   for (const p of orden){
     const tiene = g => (p.cuadros || []).indexOf(g) >= 0 ? ' checked' : '';
+    const aqui = enMes(p, mesA, mesM);       /* el interruptor es del mes que estás viendo */
     const marcas = [];
     if (p.noFD) marcas.push('nunca FD');
-    if (p.soloSemanaHasta) marcas.push('solo semana hasta ' + p.soloSemanaHasta);
-    filas.push('<tr class="' + (p.activo ? '' : 'off') + '">' +
+    /* si la baja cae justo cuando termina de hacer solo semana, no se repite el dato */
+    if (p.soloSemanaHasta && p.soloSemanaHasta !== mesAntesDe(p.bajaDesde))
+      marcas.push('solo semana hasta ' + mesLargo(p.soloSemanaHasta));
+    if (p.altaDesde) marcas.push('entra desde ' + mesLargo(p.altaDesde));
+    if (p.bajaDesde) marcas.push('trabaja hasta ' + mesLargo(mesAntesDe(p.bajaDesde)));
+    filas.push('<tr class="' + (aqui ? '' : 'off') + '">' +
       '<td class="izq"><span class="quien">' + escAttr(p.corto) + '</span>' +
         '<span class="full" title="' + escAttr(p.titulo) + '">' + escAttr(p.titulo) + '</span>' +
         (marcas.length ? '<span class="marca">' + marcas.join(' · ') + '</span>' : '') + '</td>' +
-      '<td><input type="checkbox" data-aut="' + escAttr(p.nombre) + '" data-campo="activo"' + (p.activo ? ' checked' : '') + '></td>' +
+      '<td><input type="checkbox" data-aut="' + escAttr(p.nombre) + '" data-campo="activo"' + (aqui ? ' checked' : '') + '></td>' +
       '<td><input type="checkbox" data-aut="' + escAttr(p.nombre) + '" data-campo="urg_rot"' + tiene('urg_rot') + '></td>' +
       '<td><input type="checkbox" data-aut="' + escAttr(p.nombre) + '" data-campo="urg_alm"' + tiene('urg_alm') + '></td>' +
       '<td><input type="checkbox" data-aut="' + escAttr(p.nombre) + '" data-campo="hosp"' + tiene('hosp') + '></td>' +
@@ -2559,8 +2635,11 @@ function pintarAut(){
   }
   cuerpo.innerHTML = filas.join('');
 
+  /* la pregunta de hasta cuándo trabaja */
+  pintarPreguntaBaja();
+
   /* el aviso del ciclo de urgencias */
-  const nU = URG_ROT.length;
+  const nU = personasMes('urg_rot', mesA, mesM).length;
   document.getElementById('autAviso').innerHTML = (nU !== 4)
     ? '<p class="aviso-aut"><strong>Urgencias: ' + nU + ' activo' + (nU === 1 ? '' : 's') +
       ' en el ciclo.</strong> El ciclo N → n → L → D está hecho para 4, porque cada día tiene que haber ' +
@@ -2580,6 +2659,70 @@ function pintarAut(){
       : 'La lista se guarda en este navegador.';
   }
 }
+/* '2026-11' -> 'noviembre 2026' */
+function mesLargo(clave){
+  const t = String(clave || '').split('-').map(Number);
+  if (!(t[0] >= 1900 && t[1] >= 1 && t[1] <= 12)) return clave || '';
+  return MESES[t[1]-1] + ' ' + t[0];
+}
+function mesAntesDe(clave){
+  const t = String(clave || '').split('-').map(Number);
+  if (!(t[0] >= 1900 && t[1] >= 1 && t[1] <= 12)) return clave || '';
+  const m = t[1] === 1 ? 12 : t[1] - 1, a = t[1] === 1 ? t[0] - 1 : t[0];
+  return a + '-' + String(m).padStart(2, '0');
+}
+function mesSiguiente(clave){
+  const t = String(clave || '').split('-').map(Number);
+  if (!(t[0] >= 1900 && t[1] >= 1 && t[1] <= 12)) return clave || '';
+  const m = t[1] === 12 ? 1 : t[1] + 1, a = t[1] === 12 ? t[0] + 1 : t[0];
+  return a + '-' + String(m).padStart(2, '0');
+}
+
+/* Cuando se destilda «Activo» se pregunta hasta cuándo trabaja, para no borrarla de
+   los meses en que sí trabajó. */
+let autPreguntaBaja = null;
+function pintarPreguntaBaja(){
+  const el = document.getElementById('autPregunta');
+  if (!el) return;
+  if (!autPreguntaBaja){ el.innerHTML = ''; return; }
+  const p = autDe(autPreguntaBaja.nombre);
+  if (!p){ autPreguntaBaja = null; el.innerHTML = ''; return; }
+  const este = claveMes(ctx.a, ctx.m), antes = mesAntesDe(este);
+  el.innerHTML = '<div class="aviso-aut"><strong>' + escAttr(p.corto) + ': ¿hasta cuándo trabaja?</strong> ' +
+    'Elige el último mes en que sale en el cuadro; de ahí en adelante deja de aparecer, ' +
+    'y lo que ya trabajó no se toca.<br>' +
+    '<button class="aut-op" data-baja="hasta-antes">Hasta ' + mesLargo(antes) + ' <em>(sale desde ' + mesLargo(este) + ')</em></button> ' +
+    '<button class="aut-op" data-baja="hasta-este">Hasta ' + mesLargo(este) + ' <em>(sale desde ' + mesLargo(mesSiguiente(este)) + ')</em></button> ' +
+    '<button class="aut-op sec" data-baja="no">Cancelar</button></div>';
+}
+
+function ponerBaja(nombre, bajaDesde){
+  const p = autDe(nombre);
+  if (!p) return;
+  p.activo = false;
+  p.bajaDesde = bajaDesde;
+  autPreguntaBaja = null;
+
+  /* Si en el mes abierto ya no está y tenía turnos, se ofrece vaciarlos. */
+  if (ctx){
+    const k = ctx.k;
+    const enEseMes = claveMes(ctx.a, ctx.m) >= bajaDesde;
+    const tiene = ['urg','hosp'].some(sec =>
+      ((estado[k] && estado[k][sec] && estado[k][sec][p.nombre]) || []).some(c => c && c !== '.'));
+    if (enEseMes && tiene &&
+        confirm('¿Le quito también los turnos de ' + MESES[ctx.m-1] + ' a ' + p.corto + '?\n\n' +
+          'Aceptar: se vacía su fila de ' + MESES[ctx.m-1] + '.\n' +
+          'Cancelar: los turnos se quedan guardados (la fila sale al final, en gris).')){
+      for (const sec of ['urg','hosp'])
+        if (estado[k] && estado[k][sec] && estado[k][sec][p.nombre])
+          estado[k][sec][p.nombre] = new Array(ctx.dias).fill('');
+      guardar();
+    }
+  }
+  autMsg(p.corto + ': trabaja hasta ' + mesLargo(mesAntesDe(bajaDesde)) + '.');
+  autRefrescarTodo();
+}
+
 function abrirAut(){
   const sql = document.getElementById('autSql');
   if (sql && !sql.textContent) sql.textContent = AUT_SQL;
@@ -2608,7 +2751,9 @@ async function guardarAutNube(){
     const filas = AUT.map(p => ({
       nombre: p.nombre, corto: p.corto, titulo: p.titulo,
       cuadros: (p.cuadros || []).join(','), activo: !!p.activo, no_fd: !!p.noFD,
-      solo_semana_hasta: p.soloSemanaHasta || null, orden: p.orden || 0,
+      solo_semana_hasta: p.soloSemanaHasta || null, baja_desde: p.bajaDesde || null,
+      alta_desde: p.altaDesde || null,
+      orden: p.orden || 0,
       pos: JSON.stringify(p.pos || {}),
       actualizado: new Date().toISOString()
     }));
@@ -2619,7 +2764,9 @@ async function guardarAutNube(){
     });
     if (!r.ok){
       const t = await r.text().catch(function(){ return ''; });
-      throw new Error(r.status === 404 ? 'la tabla no existe' : ('respuesta ' + r.status + (t ? ': ' + t.slice(0, 90) : '')));
+      throw new Error(r.status === 404 ? 'la tabla no existe'
+        : /column|desde/i.test(t) ? 'a la tabla le falta una columna: vuelve a pegar el SQL del panel'
+        : ('respuesta ' + r.status + (t ? ': ' + t.slice(0, 90) : '')));
     }
     autNube = {estado: 'ok', msg: ''};
   } catch(e){
@@ -2634,7 +2781,7 @@ async function traerAutNube(){
   try {
     const cab = await sbCabeceras();
     const r = await fetch(sb.url + '/rest/v1/' + AUT_TABLA +
-      '?select=nombre,corto,titulo,cuadros,activo,no_fd,solo_semana_hasta,orden,pos&order=orden', { headers: cab });
+      '?select=nombre,corto,titulo,cuadros,activo,no_fd,solo_semana_hasta,baja_desde,alta_desde,orden,pos&order=orden', { headers: cab });
     if (r.status === 404){ autNube = {estado: 'error', msg: 'la tabla no existe'}; pintarAut(); return; }
     if (!r.ok) throw new Error('respuesta ' + r.status);
     const filas = await r.json();
@@ -2645,6 +2792,8 @@ async function traerAutNube(){
         titulo: f.titulo || nombreTitulo(f.nombre),
         cuadros: String(f.cuadros || '').split(',').filter(Boolean),
         activo: f.activo !== false,
+        altaDesde: f.alta_desde || '',
+        bajaDesde: f.baja_desde || '',
         noFD: !!f.no_fd,
         soloSemanaHasta: f.solo_semana_hasta || '',
         pos: {},
@@ -2687,8 +2836,27 @@ function autRefrescarTodo(){
 function aplicarCambioAut(nombre, campo, valor){
   const p = autDe(nombre);
   if (!p) return;
-  if (campo === 'activo') p.activo = valor;
-  else if (campo === 'noFD') p.noFD = valor;
+
+  /* Destildar «Activo» no borra: pregunta hasta cuándo trabajó. Si nunca tuvo
+     turnos guardados, se va sin preguntar. */
+  if (campo === 'activo'){
+    if (valor){
+      p.activo = true; p.bajaDesde = '';
+      autPreguntaBaja = null;
+      autRefrescarTodo();
+      return;
+    }
+    if (!tieneDatos(nombre)){
+      p.activo = false; p.bajaDesde = '';
+      autRefrescarTodo();
+      return;
+    }
+    autPreguntaBaja = { nombre: nombre };
+    pintarAut();                 /* la casilla vuelve a como estaba hasta que elija */
+    return;
+  }
+
+  if (campo === 'noFD') p.noFD = valor;
   else {
     const i = (p.cuadros || []).indexOf(campo);
     if (valor && i < 0) p.cuadros.push(campo);
@@ -2700,21 +2868,6 @@ function aplicarCambioAut(nombre, campo, valor){
     }
   }
 
-  /* Si se inactiva y tenía turnos en el mes que está abierto, se pregunta si se le
-     quitan: si se dejan, el mes queda con esos turnos puestos y la fila sale en gris
-     al final (histórico). Los meses anteriores nunca se tocan. */
-  if (campo === 'activo' && !valor && ctx){
-    const k = ctx.k;
-    const tiene = ['urg','hosp'].some(sec => ((estado[k] && estado[k][sec] && estado[k][sec][p.nombre]) || []).some(c => c && c !== '.'));
-    if (tiene && confirm('¿Le quito también los turnos de ' + MESES[ctx.m-1] + ' a ' + p.corto + '?\n\n' +
-        'Aceptar: se vacía su fila de ' + MESES[ctx.m-1] + ' (los meses anteriores no se tocan).\n' +
-        'Cancelar: los turnos se quedan guardados y la fila sale en gris al final del cuadro.')){
-      for (const sec of ['urg','hosp'])
-        if (estado[k] && estado[k][sec] && estado[k][sec][p.nombre])
-          estado[k][sec][p.nombre] = new Array(ctx.dias).fill('');
-      guardar();
-    }
-  }
   autRefrescarTodo();
 }
 
@@ -2752,6 +2905,8 @@ function agregarAut(){
     titulo: titulo,
     cuadros: cuadros,
     activo: true,
+    altaDesde: ctx ? claveMes(ctx.a, ctx.m) : '',
+    bajaDesde: '',
     noFD: document.getElementById('autSinFD').checked,
     soloSemanaHasta: '',
     pos: {},
@@ -2766,7 +2921,8 @@ function agregarAut(){
   document.getElementById('autNombre').value = '';
   document.getElementById('autSinFD').checked = false;
   autRefrescarTodo();
-  autMsg('Agregado: ' + p.corto + '. Su fila entra vacía; con «Armar el mes» se reparte con los demás, o le pones los turnos a mano en el cuadro.');
+  autMsg('Agregado: ' + p.corto + (p.altaDesde ? ' (entra desde ' + mesLargo(p.altaDesde) + ')' : '') +
+    '. Su fila entra vacía; con «Armar el mes» se reparte con los demás, o le pones los turnos a mano.');
 }
 
 function quitarAut(nombre){
@@ -2792,10 +2948,16 @@ const AUT_SQL = [
   '  activo boolean default true,',
   '  no_fd boolean default false,',
   '  solo_semana_hasta text,',
+  '  alta_desde text,',
+  '  baja_desde text,',
   '  orden int default 0,',
   '  pos text default \'{}\',',
   '  actualizado timestamptz default now()',
   ');',
+  '-- si la tabla ya existía de antes, estas líneas le agregan lo que falte',
+  'alter table public.autorizadores add column if not exists alta_desde text;',
+  'alter table public.autorizadores add column if not exists baja_desde text;',
+  'alter table public.autorizadores add column if not exists pos text default \'{}\';',
   'alter table public.autorizadores enable row level security;',
   'drop policy if exists aut_sel on public.autorizadores;',
   'drop policy if exists aut_ins on public.autorizadores;',
@@ -2851,6 +3013,15 @@ $('#autFilas').addEventListener('change', ev => {
   const cb = ev.target.closest('input[data-aut]');
   if (!cb) return;
   aplicarCambioAut(cb.dataset.aut, cb.dataset.campo, cb.checked);
+});
+$('#autPregunta').addEventListener('click', ev => {
+  const b = ev.target.closest('button[data-baja]');
+  if (!b) return;
+  if (b.dataset.baja === 'no'){ autPreguntaBaja = null; pintarAut(); return; }
+  const este = claveMes(ctx.a, ctx.m);
+  const ultimo = (b.dataset.baja === 'hasta-antes') ? mesAntesDe(este) : este;
+  /* deja de estar desde el mes siguiente al último que trabaja */
+  ponerBaja(autPreguntaBaja.nombre, mesSiguiente(ultimo));
 });
 $('#autFilas').addEventListener('click', ev => {
   const b = ev.target.closest('button[data-quitar]');
